@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zen Notepad</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+    <link rel="manifest" href="/site.webmanifest">
+    <meta name="theme-color" content="#333333">
+    <style>
+        :root {
+            --bg-color: #F0EEE6;
+            --text-color: #333333;
+            --accent-color: #666666;
+            --border-color: rgba(0, 0, 0, 0.1);
+            --toolbar-bg: rgba(255, 255, 255, 0.9);
+            --shadow-color: rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #1a1a1a;
+            --text-color: #e0e0e0;
+            --accent-color: #999999;
+            --border-color: rgba(255, 255, 255, 0.15);
+            --toolbar-bg: rgba(40, 40, 40, 0.95);
+            --shadow-color: rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        #ascii-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.08;
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 1.2;
+            white-space: pre;
+            overflow: hidden;
+            color: var(--text-color);
+        }
+
+        #theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1px solid var(--border-color);
+            background: var(--toolbar-bg);
+            color: var(--text-color);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.2s ease;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        #theme-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px var(--shadow-color);
+        }
+
+        #editor-container {
+            position: relative;
+            z-index: 1;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 80px 20px 120px;
+            min-height: 100vh;
+        }
+
+        #editor {
+            width: 100%;
+            min-height: 60vh;
+            outline: none;
+            font-size: 18px;
+            line-height: 1.8;
+            color: var(--text-color);
+            background: transparent;
+        }
+
+        #editor:empty::before {
+            content: "Start writing...";
+            color: var(--accent-color);
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        #editor.font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        #editor.font-serif {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 20px;
+        }
+
+        #editor.font-sans {
+            font-family: 'Inter', sans-serif;
+        }
+
+        #editor h1 {
+            font-size: 2em;
+            font-weight: 600;
+            margin: 0.5em 0;
+            line-height: 1.3;
+        }
+
+        #editor h2 {
+            font-size: 1.5em;
+            font-weight: 500;
+            margin: 0.5em 0;
+            line-height: 1.4;
+        }
+
+        #editor p {
+            margin: 0.8em 0;
+        }
+
+        #editor b, #editor strong {
+            font-weight: 600;
+        }
+
+        #editor i, #editor em {
+            font-style: italic;
+        }
+
+        #toolbar {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            gap: 8px;
+            padding: 12px;
+            background: var(--toolbar-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 50px;
+            box-shadow: 0 4px 20px var(--shadow-color);
+            opacity: 0.6;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        #toolbar:hover {
+            opacity: 1;
+        }
+
+        .toolbar-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: transparent;
+            color: var(--text-color);
+            cursor: pointer;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .toolbar-btn:hover {
+            background: var(--border-color);
+            transform: translateY(-2px);
+        }
+
+        .toolbar-btn.active {
+            background: var(--text-color);
+            color: var(--bg-color);
+        }
+
+        .toolbar-btn .tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-8px);
+            padding: 6px 10px;
+            background: var(--text-color);
+            color: var(--bg-color);
+            font-size: 12px;
+            border-radius: 6px;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            pointer-events: none;
+        }
+
+        .toolbar-btn:hover .tooltip {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .font-indicator {
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        #word-counter {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            padding: 10px 16px;
+            background: var(--toolbar-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 50px;
+            font-size: 12px;
+            color: var(--accent-color);
+            font-family: 'JetBrains Mono', monospace;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            opacity: 0.6;
+            transition: opacity 0.3s ease;
+        }
+
+        #word-counter:hover {
+            opacity: 1;
+        }
+
+        @media (max-width: 600px) {
+            #editor-container {
+                padding: 60px 16px 100px;
+            }
+
+            #editor {
+                font-size: 16px;
+            }
+
+            #toolbar {
+                bottom: 20px;
+                right: 20px;
+                padding: 8px;
+                gap: 4px;
+            }
+
+            .toolbar-btn {
+                width: 36px;
+                height: 36px;
+            }
+
+            #theme-toggle {
+                top: 16px;
+                right: 16px;
+                width: 40px;
+                height: 40px;
+            }
+
+            #word-counter {
+                bottom: 20px;
+                left: 20px;
+                padding: 8px 12px;
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="ascii-background"></div>
+
+    <button id="theme-toggle" aria-label="Toggle theme">
+        <span id="theme-icon">🌙</span>
+    </button>
+
+    <div id="editor-container">
+        <div id="editor" class="font-sans" contenteditable="true" spellcheck="false"></div>
+    </div>
+
+    <div id="word-counter">0 words</div>
+
+    <div id="toolbar">
+        <button class="toolbar-btn" data-command="bold" aria-label="Bold">
+            <b>B</b>
+            <span class="tooltip">Bold</span>
+        </button>
+        <button class="toolbar-btn" data-command="italic" aria-label="Italic">
+            <i>I</i>
+            <span class="tooltip">Italic</span>
+        </button>
+        <button class="toolbar-btn" data-command="formatBlock" data-value="H1" aria-label="Heading 1">
+            <b>H1</b>
+            <span class="tooltip">Heading 1</span>
+        </button>
+        <button class="toolbar-btn" data-command="formatBlock" data-value="H2" aria-label="Heading 2">
+            <b>H2</b>
+            <span class="tooltip">Heading 2</span>
+        </button>
+        <button class="toolbar-btn" id="font-btn" aria-label="Change font">
+            <span class="font-indicator">Aa</span>
+            <span class="tooltip">Change Font</span>
+        </button>
+        <button class="toolbar-btn" id="copy-btn" aria-label="Copy text">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            <span class="tooltip">Copy Markdown</span>
+        </button>
+    </div>
+
+    <script>
+        const editor = document.getElementById('editor');
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeIcon = document.getElementById('theme-icon');
+        const fontBtn = document.getElementById('font-btn');
+        const copyBtn = document.getElementById('copy-btn');
+        const asciiBg = document.getElementById('ascii-background');
+        const toolbarBtns = document.querySelectorAll('.toolbar-btn[data-command]');
+
+        const fonts = ['font-sans', 'font-serif', 'font-mono'];
+        const fontNames = ['Sans', 'Serif', 'Mono'];
+        let currentFontIndex = 0;
+
+        let saveTimeout;
+        let animationId;
+        let time = 0;
+
+        const chars = ['█', '▓', '▒', '░', '·'];
+
+        function generateAsciiWave() {
+            const width = Math.ceil(window.innerWidth / 8.4) + 2;
+            const height = Math.ceil(window.innerHeight / 17);
+            let output = '';
+
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const wave1 = Math.sin((x * 0.1) + (time * 0.02));
+                    const wave2 = Math.cos((y * 0.08) + (time * 0.015));
+                    const wave3 = Math.sin(((x + y) * 0.05) + (time * 0.01));
+                    
+                    const value = (wave1 + wave2 + wave3 + 3) / 6;
+                    const charIndex = Math.floor(value * (chars.length - 1));
+                    output += chars[Math.min(Math.max(charIndex, 0), chars.length - 1)];
+                }
+                output += '\n';
+            }
+
+            asciiBg.textContent = output;
+            time++;
+            animationId = requestAnimationFrame(generateAsciiWave);
+        }
+
+        function loadSettings() {
+            const savedContent = localStorage.getItem('zen-content');
+            const savedFont = localStorage.getItem('zen-font');
+            const savedTheme = localStorage.getItem('zen-theme');
+
+            if (savedContent) {
+                editor.innerHTML = savedContent;
+            }
+
+            if (savedFont) {
+                const fontIndex = fonts.indexOf(savedFont);
+                if (fontIndex !== -1) {
+                    currentFontIndex = fontIndex;
+                    applyFont();
+                }
+            }
+
+            if (savedTheme === 'dark') {
+                document.body.setAttribute('data-theme', 'dark');
+                themeIcon.textContent = '☀️';
+            } else {
+                document.body.removeAttribute('data-theme');
+                themeIcon.textContent = '🌙';
+            }
+
+            updateWordCounter();
+        }
+
+        function saveContent() {
+            localStorage.setItem('zen-content', editor.innerHTML);
+        }
+
+        function applyFont() {
+            fonts.forEach(f => editor.classList.remove(f));
+            editor.classList.add(fonts[currentFontIndex]);
+            localStorage.setItem('zen-font', fonts[currentFontIndex]);
+        }
+
+        function cycleFont() {
+            currentFontIndex = (currentFontIndex + 1) % fonts.length;
+            applyFont();
+            
+            const originalText = fontBtn.querySelector('.font-indicator').textContent;
+            fontBtn.querySelector('.font-indicator').textContent = fontNames[currentFontIndex];
+            setTimeout(() => {
+                fontBtn.querySelector('.font-indicator').textContent = 'Aa';
+            }, 800);
+        }
+
+        function toggleTheme() {
+            const isDark = document.body.hasAttribute('data-theme');
+            if (isDark) {
+                document.body.removeAttribute('data-theme');
+                themeIcon.textContent = '🌙';
+                localStorage.setItem('zen-theme', 'light');
+            } else {
+                document.body.setAttribute('data-theme', 'dark');
+                themeIcon.textContent = '☀️';
+                localStorage.setItem('zen-theme', 'dark');
+            }
+        }
+
+        function showCopiedFeedback(btn) {
+            const tooltip = btn.querySelector('.tooltip');
+            const originalText = tooltip.textContent;
+            tooltip.textContent = 'Copied!';
+            setTimeout(() => {
+                tooltip.textContent = originalText;
+            }, 1200);
+        }
+
+        function htmlToMarkdown(element) {
+            let markdown = '';
+            
+            function traverse(node) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    return node.textContent;
+                }
+                
+                if (node.nodeType !== Node.ELEMENT_NODE) {
+                    return '';
+                }
+                
+                const tag = node.tagName.toLowerCase();
+                let content = '';
+                
+                for (const child of node.childNodes) {
+                    content += traverse(child);
+                }
+                
+                switch (tag) {
+                    case 'h1':
+                        return '# ' + content.trim() + '\n\n';
+                    case 'h2':
+                        return '## ' + content.trim() + '\n\n';
+                    case 'h3':
+                        return '### ' + content.trim() + '\n\n';
+                    case 'b':
+                    case 'strong':
+                        return '**' + content + '**';
+                    case 'i':
+                    case 'em':
+                        return '*' + content + '*';
+                    case 'p':
+                        return content.trim() + '\n\n';
+                    case 'br':
+                        return '\n';
+                    case 'div':
+                        return content + '\n';
+                    case 'ul':
+                        return content;
+                    case 'li':
+                        return '- ' + content.trim() + '\n';
+                    case 'blockquote':
+                        return '> ' + content.trim().replace(/\n/g, '\n> ') + '\n\n';
+                    case 'code':
+                        return '`' + content + '`';
+                    case 'pre':
+                        return '\`\`\`\n' + content.trim() + '\n\`\`\`\n\n';
+                    case 'a':
+                        const href = node.getAttribute('href') || '';
+                        return '[' + content + '](' + href + ')';
+                    default:
+                        return content;
+                }
+            }
+            
+            for (const child of element.childNodes) {
+                markdown += traverse(child);
+            }
+            
+            return markdown.trim();
+        }
+
+        function copyText() {
+            const markdown = htmlToMarkdown(editor);
+            navigator.clipboard.writeText(markdown).then(() => {
+                showCopiedFeedback(copyBtn);
+            });
+        }
+
+        function execCommand(command, value = null) {
+            document.execCommand(command, false, value);
+            editor.focus();
+        }
+
+        function updateWordCounter() {
+            const text = editor.innerText || '';
+            const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+            document.getElementById('word-counter').textContent = wordCount + ' word' + (wordCount === 1 ? '' : 's');
+        }
+
+        editor.addEventListener('input', () => {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveContent, 500);
+            updateWordCounter();
+        });
+
+        toolbarBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const command = btn.dataset.command;
+                const value = btn.dataset.value;
+                execCommand(command, value);
+            });
+        });
+
+        fontBtn.addEventListener('click', cycleFont);
+        copyBtn.addEventListener('click', copyText);
+        themeToggle.addEventListener('click', toggleTheme);
+
+        editor.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                document.execCommand('insertText', false, '    ');
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            cancelAnimationFrame(animationId);
+            generateAsciiWave();
+        });
+
+        loadSettings();
+        generateAsciiWave();
+    </script>
+</body>
+</html>

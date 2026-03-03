@@ -1,0 +1,16 @@
+{
+  "name": "Notepad",
+  "short_name": "Notepad",
+  "description": "A minimalist zen notepad with autosave",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F0EEE6",
+  "theme_color": "#333333",
+  "icons": [
+    {
+      "src": "/assets/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ]
+}
