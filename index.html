@@ -244,6 +244,28 @@
             opacity: 1;
         }
 
+        #toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            padding: 10px 20px;
+            background: var(--text-color);
+            color: var(--bg-color);
+            font-size: 13px;
+            border-radius: 8px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 200;
+        }
+
+        #toast.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+        }
+
         @media (max-width: 600px) {
             #editor-container {
                 padding: 60px 16px 100px;
@@ -324,6 +346,8 @@
         </button>
     </div>
 
+    <div id="toast"></div>
+
     <script>
         const editor = document.getElementById('editor');
         const themeToggle = document.getElementById('theme-toggle');
@@ -367,41 +391,53 @@
         }
 
         function loadSettings() {
-            const savedContent = localStorage.getItem('zen-content');
-            const savedFont = localStorage.getItem('zen-font');
-            const savedTheme = localStorage.getItem('zen-theme');
+            try {
+                const savedContent = localStorage.getItem('zen-content');
+                const savedFont = localStorage.getItem('zen-font');
+                const savedTheme = localStorage.getItem('zen-theme');
 
-            if (savedContent) {
-                editor.innerHTML = savedContent;
-            }
-
-            if (savedFont) {
-                const fontIndex = fonts.indexOf(savedFont);
-                if (fontIndex !== -1) {
-                    currentFontIndex = fontIndex;
-                    applyFont();
+                if (savedContent) {
+                    editor.innerHTML = savedContent;
                 }
-            }
 
-            if (savedTheme === 'dark') {
-                document.body.setAttribute('data-theme', 'dark');
-                themeIcon.textContent = '☀️';
-            } else {
-                document.body.removeAttribute('data-theme');
-                themeIcon.textContent = '🌙';
-            }
+                if (savedFont) {
+                    const fontIndex = fonts.indexOf(savedFont);
+                    if (fontIndex !== -1) {
+                        currentFontIndex = fontIndex;
+                        applyFont();
+                    }
+                }
 
-            updateWordCounter();
+                if (savedTheme === 'dark') {
+                    document.body.setAttribute('data-theme', 'dark');
+                    themeIcon.textContent = '☀️';
+                } else {
+                    document.body.removeAttribute('data-theme');
+                    themeIcon.textContent = '🌙';
+                }
+
+                updateWordCounter();
+            } catch (e) {
+                console.warn('Failed to load settings:', e);
+            }
         }
 
         function saveContent() {
-            localStorage.setItem('zen-content', editor.innerHTML);
+            try {
+                localStorage.setItem('zen-content', editor.innerHTML);
+            } catch (e) {
+                showToast('Failed to save. Storage may be full.');
+            }
         }
 
         function applyFont() {
             fonts.forEach(f => editor.classList.remove(f));
             editor.classList.add(fonts[currentFontIndex]);
-            localStorage.setItem('zen-font', fonts[currentFontIndex]);
+            try {
+                localStorage.setItem('zen-font', fonts[currentFontIndex]);
+            } catch (e) {
+                // Silent fail for font preference
+            }
         }
 
         function cycleFont() {
@@ -420,11 +456,19 @@
             if (isDark) {
                 document.body.removeAttribute('data-theme');
                 themeIcon.textContent = '🌙';
-                localStorage.setItem('zen-theme', 'light');
+                try {
+                    localStorage.setItem('zen-theme', 'light');
+                } catch (e) {
+                    // Silent fail
+                }
             } else {
                 document.body.setAttribute('data-theme', 'dark');
                 themeIcon.textContent = '☀️';
-                localStorage.setItem('zen-theme', 'dark');
+                try {
+                    localStorage.setItem('zen-theme', 'dark');
+                } catch (e) {
+                    // Silent fail
+                }
             }
         }
 
@@ -504,12 +548,75 @@
             const markdown = htmlToMarkdown(editor);
             navigator.clipboard.writeText(markdown).then(() => {
                 showCopiedFeedback(copyBtn);
+            }).catch((err) => {
+                showToast('Failed to copy. Please try again.');
+                console.error('Clipboard error:', err);
             });
         }
 
+        function showCopiedFeedback(btn) {
+            const tooltip = btn.querySelector('.tooltip');
+            const originalText = tooltip.textContent;
+            tooltip.textContent = 'Copied!';
+            setTimeout(() => {
+                tooltip.textContent = originalText;
+            }, 1200);
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2500);
+        }
+
         function execCommand(command, value = null) {
-            document.execCommand(command, false, value);
+            const selection = window.getSelection();
+            if (!selection.rangeCount) return;
+
+            const range = selection.getRangeAt(0);
+            const selectedText = range.toString();
+
+            if (!selectedText) {
+                editor.focus();
+                return;
+            }
+
+            let wrapper;
+            switch (command) {
+                case 'bold':
+                    wrapper = document.createElement('strong');
+                    break;
+                case 'italic':
+                    wrapper = document.createElement('em');
+                    break;
+                case 'formatBlock':
+                    if (value === 'H1') {
+                        wrapper = document.createElement('h1');
+                    } else if (value === 'H2') {
+                        wrapper = document.createElement('h2');
+                    }
+                    break;
+                default:
+                    editor.focus();
+                    return;
+            }
+
+            if (wrapper) {
+                wrapper.appendChild(range.extractContents());
+                range.insertNode(wrapper);
+
+                selection.removeAllRanges();
+                const newRange = document.createRange();
+                newRange.selectNodeContents(wrapper);
+                selection.addRange(newRange);
+            }
+
             editor.focus();
+            saveContent();
+            updateWordCounter();
         }
 
         function updateWordCounter() {
