@@ -395,13 +395,19 @@
         }
 
         function saveContent() {
-            localStorage.setItem('zen-content', editor.innerHTML);
+            try {
+                localStorage.setItem('zen-content', editor.innerHTML);
+            } catch (e) {
+            }
         }
 
         function applyFont() {
             fonts.forEach(f => editor.classList.remove(f));
             editor.classList.add(fonts[currentFontIndex]);
-            localStorage.setItem('zen-font', fonts[currentFontIndex]);
+            try {
+                localStorage.setItem('zen-font', fonts[currentFontIndex]);
+            } catch (e) {
+            }
         }
 
         function cycleFont() {
@@ -420,11 +426,17 @@
             if (isDark) {
                 document.body.removeAttribute('data-theme');
                 themeIcon.textContent = '🌙';
-                localStorage.setItem('zen-theme', 'light');
+                try {
+                    localStorage.setItem('zen-theme', 'light');
+                } catch (e) {
+                }
             } else {
                 document.body.setAttribute('data-theme', 'dark');
                 themeIcon.textContent = '☀️';
-                localStorage.setItem('zen-theme', 'dark');
+                try {
+                    localStorage.setItem('zen-theme', 'dark');
+                } catch (e) {
+                }
             }
         }
 

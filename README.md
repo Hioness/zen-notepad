@@ -3,7 +3,9 @@
 A minimalist, distraction-free notepad with a zen aesthetic.
 Built with vanilla HTML, CSS, and JS—no build tools or dependencies required.
 
-![Zen Notepad Screenshot](https://user-images.githubusercontent.com/placeholder/screenshot.png)
+![Zen Notepad Light Theme](assets/screenshot-light.png)
+
+![Zen Notepad Dark Theme](assets/screenshot-dark.png)
 
 ## Features
 
@@ -93,7 +95,9 @@ Works in all modern browsers that support:
 .
 ├── index.html          # Main application
 ├── assets/
-│   └── favicon.svg     # Notepad icon
+│   ├── favicon.svg     # Notepad icon
+│   ├── screenshot-light.png  # Light theme screenshot
+│   └── screenshot-dark.png   # Dark theme screenshot
 ├── site.webmanifest    # PWA manifest
 └── README.md           # This file
 ```
