@@ -223,10 +223,18 @@
             font-weight: 500;
         }
 
-        #word-counter {
+        #bottom-left {
             position: fixed;
             bottom: 30px;
             left: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+            z-index: 100;
+        }
+
+        #word-counter {
             padding: 10px 16px;
             background: var(--toolbar-bg);
             border: 1px solid var(--border-color);
@@ -234,7 +242,6 @@
             font-size: 12px;
             color: var(--accent-color);
             font-family: 'JetBrains Mono', monospace;
-            z-index: 100;
             backdrop-filter: blur(10px);
             opacity: 0.6;
             transition: opacity 0.3s ease;
@@ -242,6 +249,174 @@
 
         #word-counter:hover {
             opacity: 1;
+        }
+
+        #paste-md-btn {
+            padding: 10px 14px;
+            background: var(--toolbar-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 50px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-color);
+            font-size: 12px;
+            backdrop-filter: blur(10px);
+            opacity: 0.6;
+            transition: opacity 0.3s ease;
+            position: relative;
+        }
+
+        #paste-md-btn:hover {
+            opacity: 1;
+        }
+
+        #paste-md-btn .tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-8px);
+            padding: 6px 10px;
+            background: var(--text-color);
+            color: var(--bg-color);
+            font-size: 12px;
+            border-radius: 6px;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            pointer-events: none;
+        }
+
+        #paste-md-btn:hover .tooltip {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: var(--toolbar-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 8px 32px var(--shadow-color);
+            backdrop-filter: blur(10px);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            font-weight: 500;
+            font-size: 16px;
+        }
+
+        .modal-close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-color);
+            padding: 0;
+            line-height: 1;
+        }
+
+        .modal-close-btn:hover {
+            opacity: 0.6;
+        }
+
+        #md-input {
+            width: 100%;
+            min-height: 200px;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            resize: vertical;
+            outline: none;
+        }
+
+        #md-input:focus {
+            border-color: var(--accent-color);
+        }
+
+        .modal-note {
+            margin-top: 12px;
+            font-size: 13px;
+            color: var(--accent-color);
+            line-height: 1.4;
+        }
+
+        .modal-note strong, .modal-note em, .modal-note code {
+            font-size: 12px;
+            padding: 1px 4px;
+            border-radius: 3px;
+            background: var(--border-color);
+        }
+
+        .modal-note code {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .modal-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+        }
+
+        .modal-btn.primary {
+            background: var(--text-color);
+            color: var(--bg-color);
+        }
+
+        .modal-btn.primary:hover {
+            opacity: 0.85;
+        }
+
+        .modal-btn.secondary {
+            background: transparent;
+            color: var(--text-color);
+        }
+
+        .modal-btn.secondary:hover {
+            background: var(--border-color);
         }
 
         @media (max-width: 600px) {
@@ -272,11 +447,18 @@
                 height: 40px;
             }
 
-            #word-counter {
+            #bottom-left {
                 bottom: 20px;
                 left: 20px;
+            }
+
+            #word-counter {
                 padding: 8px 12px;
                 font-size: 11px;
+            }
+
+            #paste-md-btn {
+                padding: 8px 12px;
             }
         }
     </style>
@@ -292,7 +474,33 @@
         <div id="editor" class="font-sans" contenteditable="true" spellcheck="false"></div>
     </div>
 
-    <div id="word-counter">0 words</div>
+    <div id="bottom-left">
+        <button id="paste-md-btn" aria-label="Import Markdown">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="7" y="4" width="10" height="14" rx="2" ry="2"></rect>
+                <rect x="9" y="2" width="6" height="3" rx="1" ry="1"></rect>
+            </svg>
+            <span class="tooltip">Import Markdown</span>
+        </button>
+        <div id="word-counter">0 words</div>
+    </div>
+
+    <div id="md-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>Import Markdown</span>
+                <button id="modal-close" class="modal-close-btn" aria-label="Close">&times;</button>
+            </div>
+            <textarea id="md-input" placeholder="Paste your markdown here..."></textarea>
+            <div class="modal-note">
+                Converts: <strong>**bold**</strong>, <em>*italic*</em>, <code># heading</code>, <code>## heading</code>. Other formatting is preserved as plain text.
+            </div>
+            <div class="modal-footer">
+                <button id="modal-cancel" class="modal-btn secondary">Cancel</button>
+                <button id="modal-insert" class="modal-btn primary">Convert & Insert</button>
+            </div>
+        </div>
+    </div>
 
     <div id="toolbar">
         <button class="toolbar-btn" data-command="bold" aria-label="Bold">
@@ -512,12 +720,125 @@
             return markdown.trim();
         }
 
+        function markdownToHtml(markdown) {
+            let html = '';
+            const lines = markdown.split('\n');
+            let inParagraph = false;
+
+            function convertInline(text) {
+                text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+                text = text.replace(/__(.+?)__/g, '<strong>$1</strong>');
+                text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
+                text = text.replace(/_(.+?)_/g, '<em>$1</em>');
+                return text;
+            }
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+
+                if (line === '') {
+                    if (inParagraph) {
+                        html += '</p>';
+                        inParagraph = false;
+                    }
+                    continue;
+                }
+
+                if (line.startsWith('# ')) {
+                    if (inParagraph) {
+                        html += '</p>';
+                        inParagraph = false;
+                    }
+                    html += '<h1>' + convertInline(line.substring(2)) + '</h1>';
+                } else if (line.startsWith('## ')) {
+                    if (inParagraph) {
+                        html += '</p>';
+                        inParagraph = false;
+                    }
+                    html += '<h2>' + convertInline(line.substring(3)) + '</h2>';
+                } else {
+                    if (!inParagraph) {
+                        html += '<p>';
+                        inParagraph = true;
+                    } else {
+                        html += ' ';
+                    }
+                    html += convertInline(line);
+                }
+            }
+
+            if (inParagraph) {
+                html += '</p>';
+            }
+
+            return html;
+        }
+
         function copyText() {
             const markdown = htmlToMarkdown(editor);
             navigator.clipboard.writeText(markdown).then(() => {
                 showCopiedFeedback(copyBtn);
             });
         }
+
+        const mdModal = document.getElementById('md-modal');
+        const mdInput = document.getElementById('md-input');
+        const pasteMdBtn = document.getElementById('paste-md-btn');
+        const modalClose = document.getElementById('modal-close');
+        const modalCancel = document.getElementById('modal-cancel');
+        const modalInsert = document.getElementById('modal-insert');
+
+        function openModal() {
+            mdModal.classList.add('active');
+            mdInput.value = '';
+            mdInput.focus();
+        }
+
+        function closeModal() {
+            mdModal.classList.remove('active');
+            editor.focus();
+        }
+
+        function insertMarkdown() {
+            const md = mdInput.value;
+            if (!md.trim()) {
+                closeModal();
+                return;
+            }
+
+            const html = markdownToHtml(md);
+
+            editor.focus();
+
+            if (editor.innerHTML.trim()) {
+                const space = document.createElement('span');
+                space.innerHTML = ' ';
+                editor.appendChild(space);
+            }
+
+            const frag = document.createRange().createContextualFragment(html);
+            editor.appendChild(frag);
+
+            saveContent();
+            closeModal();
+        }
+
+        pasteMdBtn.addEventListener('click', openModal);
+        modalClose.addEventListener('click', closeModal);
+        modalCancel.addEventListener('click', closeModal);
+        modalInsert.addEventListener('click', insertMarkdown);
+
+        mdModal.addEventListener('click', (e) => {
+            if (e.target === mdModal) {
+                closeModal();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && mdModal.classList.contains('active')) {
+                closeModal();
+            }
+        });
 
         function execCommand(command, value = null) {
             document.execCommand(command, false, value);
