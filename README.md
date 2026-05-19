@@ -1,7 +1,8 @@
 # Zen Notepad
 
 A minimalist, distraction-free notepad with a zen aesthetic.
-Built with vanilla HTML, CSS, and JS—no build tools or dependencies required.
+Built with vanilla HTML, CSS, and JS — no build tools required,
+minimal dependencies loaded via CDN.
 
 ![Zen Notepad Light Theme](assets/screenshot-light.png)
 
@@ -13,23 +14,33 @@ Built with vanilla HTML, CSS, and JS—no build tools or dependencies required.
 
 A subtle, animated background featuring wave patterns created with block characters
 (`█▓▒░·`). The animation uses sine and cosine functions to create a calming,
-ever-changing visual effect.
+ever-changing visual effect. Automatically pauses when the tab is hidden and
+respects the `prefers-reduced-motion` system setting.
 
 ### ✍️ Rich Text Editor
 
 - **Contenteditable** interface for natural writing
-- **Three font options**: Sans, Serif, Mono
+- **Three font options**: Sans (Inter), Serif (Cormorant Garamond), Mono (JetBrains Mono)
 - **Formatting tools**: Bold, Italic, H1, H2 headings
 - **Tab key support**: Inserts 4 spaces for indentation
 
-### 📋 Markdown Export
+### 📋 Markdown Export & Import
 
-The copy button exports your formatted text as Markdown, preserving:
+Export your formatted text as Markdown with the copy button, preserving:
 
-- Headings (`# H1`, `## H2`)
+- Headings (`# H1`, `## H2`, `### H3`)
 - Bold text (`**bold**`)
 - Italic text (`*italic*`)
-- Line breaks and paragraphs
+- Lists, blockquotes, code blocks, inline code, and links
+
+The Import Markdown button (bottom-left) allows pasting Markdown back in,
+inserting at the cursor position. The import/export pair round-trips all
+supported formatting — what the app exports can be imported back correctly.
+
+### 🔒 Paste Sanitization
+
+Pasted content is sanitized with **DOMPurify** to strip any executable HTML,
+script tags, or event handlers. Only safe semantic tags are preserved.
 
 ### 🌓 Dark/Light Theme
 
@@ -37,11 +48,12 @@ The copy button exports your formatted text as Markdown, preserving:
 - Theme preference saved to localStorage
 - Smooth transitions between modes
 
-### 💾 Auto-save
+### 💾 Auto-save with Resilience
 
 - Content automatically saves to localStorage 500ms after you stop typing
-- Font selection persists across sessions
-- Theme preference persists across sessions
+- Font selection and theme preference persist across sessions
+- A warning banner appears if localStorage quota is exceeded
+- Flushes pending saves immediately on `beforeunload` and tab `visibilitychange`
 - Never lose your work
 
 ### 📊 Word Counter
@@ -57,6 +69,14 @@ The copy button exports your formatted text as Markdown, preserving:
 - No distracting UI elements while writing
 - Responsive design for mobile and desktop
 
+### ♿ Accessibility
+
+- Editor has an accessible name (`role="textbox"`, `aria-label="Editor"`)
+- Import Markdown modal is a proper dialog (`role="dialog"`, `aria-modal="true"`)
+- Focus is trapped inside the modal while open (Tab/Shift+Tab cycle)
+- Background content is hidden from assistive tech when modal is active
+- All toolbar buttons have `aria-label` and visible tooltips
+
 ## Usage
 
 1. Open `index.html` in any modern web browser
@@ -64,20 +84,22 @@ The copy button exports your formatted text as Markdown, preserving:
 3. Use the toolbar buttons to format your text
 4. Click the font button (`Aa`) to cycle through font options
 5. Click the copy button to copy your text as Markdown
-6. Toggle the theme with the 🌙/☀️ button in the top-right
+6. Click the Import Markdown button (clipboard icon) to paste Markdown back in
+7. Toggle the theme with the 🌙/☀️ button in the top-right
 
 ## Keyboard Shortcuts
 
-| Key    | Action             |
-|--------|--------------------|
-| `Tab`  | Insert 4 spaces    |
+| Key             | Action                      |
+|-----------------|-----------------------------|
+| `Tab`           | Insert 4 spaces             |
+| `Escape`        | Close Import Markdown modal |
 
 ## Technical Details
 
 - **No build process**: Pure HTML/CSS/JS
-- **No external dependencies**: Google Fonts loaded via CDN
+- **CDN dependencies**: Google Fonts via `fonts.googleapis.com` + DOMPurify via jsDelivr
 - **LocalStorage**: Used for persisting content and preferences
-- **Clipboard API**: For copying formatted markdown
+- **Clipboard API**: For copying formatted markdown, with `execCommand` fallback
 - **requestAnimationFrame**: For smooth ASCII background animation
 
 ## Browser Support
@@ -88,6 +110,7 @@ Works in all modern browsers that support:
 - CSS custom properties (variables)
 - Clipboard API
 - localStorage
+- Lookbehind assertions in JavaScript regular expressions
 
 ## File Structure
 
@@ -111,11 +134,12 @@ python3 -m http.server 8000
 # Open http://localhost:8000
 ```
 
-Or simply open `index.html` directly in your browser.
+Or simply open `index.html` directly in your browser (all asset paths are
+relative for local use).
 
 ## License
 
-MIT License - feel free to use, modify, and distribute.
+MIT License — feel free to use, modify, and distribute.
 
 ## Credits
 

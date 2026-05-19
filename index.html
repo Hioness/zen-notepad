@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zen Notepad</title>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
-    <link rel="manifest" href="/site.webmanifest">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="manifest" href="site.webmanifest">
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"></script>
     <meta name="theme-color" content="#333333">
     <style>
         :root {
@@ -16,6 +17,8 @@
             --border-color: rgba(0, 0, 0, 0.1);
             --toolbar-bg: rgba(255, 255, 255, 0.9);
             --shadow-color: rgba(0, 0, 0, 0.1);
+            --critical: #c53030;
+            --critical-bg: rgba(197, 48, 48, 0.1);
         }
 
         [data-theme="dark"] {
@@ -25,6 +28,8 @@
             --border-color: rgba(255, 255, 255, 0.15);
             --toolbar-bg: rgba(40, 40, 40, 0.95);
             --shadow-color: rgba(0, 0, 0, 0.3);
+            --critical: #ff6b6b;
+            --critical-bg: rgba(255, 107, 107, 0.15);
         }
 
         * {
@@ -103,23 +108,57 @@
             background: transparent;
         }
 
-        #editor:empty::before {
-            content: "Start writing...";
+        #editor-placeholder {
+            position: absolute;
+            top: 78px;
+            left: 20px;
             color: var(--accent-color);
             opacity: 0.6;
             pointer-events: none;
+            font-size: 18px;
+            line-height: 1.8;
+            margin: 0;
+            padding: 0;
+            display: none;
         }
 
-        #editor.font-mono {
+        #editor-placeholder.visible {
+            display: inline-block;
+        }
+
+        #storage-warning {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            background: var(--critical-bg);
+            border: 1px solid var(--critical);
+            color: var(--critical);
+            border-radius: 50px;
+            font-size: 13px;
+            z-index: 300;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        #storage-warning.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .font-mono {
             font-family: 'JetBrains Mono', monospace;
         }
 
-        #editor.font-serif {
+        .font-serif {
             font-family: 'Cormorant Garamond', serif;
             font-size: 20px;
         }
 
-        #editor.font-sans {
+        .font-sans {
             font-family: 'Inter', sans-serif;
         }
 
@@ -470,8 +509,11 @@
         <span id="theme-icon">🌙</span>
     </button>
 
+    <div id="storage-warning">Storage full — copy your text to avoid losing work</div>
+
     <div id="editor-container">
-        <div id="editor" class="font-sans" contenteditable="true" spellcheck="false"></div>
+        <div id="editor-placeholder" class="font-sans visible">Start writing...</div>
+        <div id="editor" class="font-sans" role="textbox" aria-multiline="true" aria-label="Editor" contenteditable="true" spellcheck="false"></div>
     </div>
 
     <div id="bottom-left">
@@ -485,7 +527,7 @@
         <div id="word-counter">0 words</div>
     </div>
 
-    <div id="md-modal" class="modal-overlay">
+    <div id="md-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-label="Import Markdown">
         <div class="modal-content">
             <div class="modal-header">
                 <span>Import Markdown</span>
@@ -540,6 +582,7 @@
         const copyBtn = document.getElementById('copy-btn');
         const asciiBg = document.getElementById('ascii-background');
         const toolbarBtns = document.querySelectorAll('.toolbar-btn[data-command]');
+        const editorPlaceholder = document.getElementById('editor-placeholder');
 
         const fonts = ['font-sans', 'font-serif', 'font-mono'];
         const fontNames = ['Sans', 'Serif', 'Mono'];
@@ -550,6 +593,39 @@
         let time = 0;
 
         const chars = ['█', '▓', '▒', '░', '·'];
+
+        const PURIFY_CONFIG = {
+            ALLOWED_TAGS: ['p', 'br', 'div', 'h1', 'h2', 'h3', 'strong', 'b', 'em', 'i', 'ul', 'li', 'blockquote', 'code', 'pre', 'a', 'span'],
+            ALLOWED_ATTR: ['href', 'class']
+        };
+
+        const storageWarning = document.getElementById('storage-warning');
+        let resizeTimeout;
+
+        function showStorageWarning() {
+            storageWarning.classList.add('visible');
+        }
+
+        function hideStorageWarning() {
+            storageWarning.classList.remove('visible');
+        }
+
+        function fallbackCopy(text, onSuccess, onError) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                const success = document.execCommand('copy');
+                document.body.removeChild(textarea);
+                if (success) onSuccess(); else onError();
+            } catch (e) {
+                document.body.removeChild(textarea);
+                onError();
+            }
+        }
 
         function generateAsciiWave() {
             const width = Math.ceil(window.innerWidth / 8.4) + 2;
@@ -580,8 +656,10 @@
             const savedTheme = localStorage.getItem('zen-theme');
 
             if (savedContent) {
-                editor.innerHTML = savedContent;
+                const clean = DOMPurify.sanitize(savedContent, PURIFY_CONFIG);
+                editor.innerHTML = clean;
             }
+            editorPlaceholder.classList.toggle('visible', editor.textContent.trim().length === 0);
 
             if (savedFont) {
                 const fontIndex = fonts.indexOf(savedFont);
@@ -605,13 +683,21 @@
         function saveContent() {
             try {
                 localStorage.setItem('zen-content', editor.innerHTML);
+                hideStorageWarning();
             } catch (e) {
+                if (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014) {
+                    showStorageWarning();
+                }
             }
         }
 
         function applyFont() {
-            fonts.forEach(f => editor.classList.remove(f));
+            fonts.forEach(f => {
+                editor.classList.remove(f);
+                editorPlaceholder.classList.remove(f);
+            });
             editor.classList.add(fonts[currentFontIndex]);
+            editorPlaceholder.classList.add(fonts[currentFontIndex]);
             try {
                 localStorage.setItem('zen-font', fonts[currentFontIndex]);
             } catch (e) {
@@ -721,42 +807,118 @@
         }
 
         function markdownToHtml(markdown) {
-            let html = '';
             const lines = markdown.split('\n');
+            let html = '';
             let inParagraph = false;
+            let inList = false;
+            let inBlockquote = false;
+            let inCodeBlock = false;
+            let codeBuffer = '';
 
             function convertInline(text) {
-                text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+                text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+                text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+                text = text.replace(/(?<!\*)\*\*\*(?!\*)(.+?)(?<!\*)\*\*\*(?!\*)/g, '<strong><em>$1</em></strong>');
+                text = text.replace(/(?<!\*)\*\*(?!\*)(.+?)(?<!\*)\*\*(?!\*)/g, '<strong>$1</strong>');
+                text = text.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
                 text = text.replace(/__(.+?)__/g, '<strong>$1</strong>');
-                text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
-                text = text.replace(/_(.+?)_/g, '<em>$1</em>');
+                text = text.replace(/(?<!\w)_(.+?)_(?!\w)/g, '<em>$1</em>');
                 return text;
             }
 
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i].trim();
+            function closeParagraph() {
+                if (inParagraph) {
+                    html += '</p>';
+                    inParagraph = false;
+                }
+            }
 
-                if (line === '') {
-                    if (inParagraph) {
-                        html += '</p>';
-                        inParagraph = false;
+            function closeList() {
+                if (inList) {
+                    html += '</ul>';
+                    inList = false;
+                }
+            }
+
+            function closeBlockquote() {
+                if (inBlockquote) {
+                    html += '</blockquote>';
+                    inBlockquote = false;
+                }
+            }
+
+            function closeCodeBlock() {
+                if (inCodeBlock) {
+                    html += '</code></pre>';
+                    inCodeBlock = false;
+                    codeBuffer = '';
+                }
+            }
+
+            for (let i = 0; i < lines.length; i++) {
+                const rawLine = lines[i];
+                const line = rawLine.trim();
+
+                if (inCodeBlock) {
+                    if (line === '```') {
+                        closeCodeBlock();
+                    } else {
+                        codeBuffer += rawLine + '\n';
                     }
                     continue;
                 }
 
+                if (line === '```') {
+                    closeParagraph();
+                    closeList();
+                    closeBlockquote();
+                    inCodeBlock = true;
+                    codeBuffer = '';
+                    html += '<pre><code>';
+                    continue;
+                }
+
+                if (line === '') {
+                    closeParagraph();
+                    closeList();
+                    closeBlockquote();
+                    continue;
+                }
+
                 if (line.startsWith('# ')) {
-                    if (inParagraph) {
-                        html += '</p>';
-                        inParagraph = false;
-                    }
+                    closeParagraph();
+                    closeList();
+                    closeBlockquote();
                     html += '<h1>' + convertInline(line.substring(2)) + '</h1>';
                 } else if (line.startsWith('## ')) {
-                    if (inParagraph) {
-                        html += '</p>';
-                        inParagraph = false;
-                    }
+                    closeParagraph();
+                    closeList();
+                    closeBlockquote();
                     html += '<h2>' + convertInline(line.substring(3)) + '</h2>';
+                } else if (line.startsWith('### ')) {
+                    closeParagraph();
+                    closeList();
+                    closeBlockquote();
+                    html += '<h3>' + convertInline(line.substring(4)) + '</h3>';
+                } else if (line.startsWith('- ') || line.startsWith('* ')) {
+                    closeParagraph();
+                    closeBlockquote();
+                    if (!inList) {
+                        inList = true;
+                        html += '<ul>';
+                    }
+                    html += '<li>' + convertInline(line.substring(2)) + '</li>';
+                } else if (line.startsWith('> ')) {
+                    closeParagraph();
+                    closeList();
+                    if (!inBlockquote) {
+                        inBlockquote = true;
+                        html += '<blockquote>';
+                    }
+                    html += '<p>' + convertInline(line.substring(2)) + '</p>';
                 } else {
+                    closeList();
+                    closeBlockquote();
                     if (!inParagraph) {
                         html += '<p>';
                         inParagraph = true;
@@ -767,18 +929,37 @@
                 }
             }
 
-            if (inParagraph) {
-                html += '</p>';
-            }
+            closeParagraph();
+            closeList();
+            closeBlockquote();
+            closeCodeBlock();
 
             return html;
         }
 
         function copyText() {
             const markdown = htmlToMarkdown(editor);
-            navigator.clipboard.writeText(markdown).then(() => {
+            
+            function onSuccess() {
                 showCopiedFeedback(copyBtn);
-            });
+            }
+            
+            function onError() {
+                const tooltip = copyBtn.querySelector('.tooltip');
+                const originalText = tooltip.textContent;
+                tooltip.textContent = 'Copy failed';
+                setTimeout(() => {
+                    tooltip.textContent = originalText;
+                }, 1200);
+            }
+            
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(markdown).then(onSuccess).catch(() => {
+                    fallbackCopy(markdown, onSuccess, onError);
+                });
+            } else {
+                fallbackCopy(markdown, onSuccess, onError);
+            }
         }
 
         const mdModal = document.getElementById('md-modal');
@@ -788,15 +969,46 @@
         const modalCancel = document.getElementById('modal-cancel');
         const modalInsert = document.getElementById('modal-insert');
 
+        function trapFocus(e) {
+            if (e.key !== 'Tab') return;
+            const focusable = mdModal.querySelectorAll('button, textarea');
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            
+            if (e.shiftKey) {
+                if (document.activeElement === first) {
+                    e.preventDefault();
+                    last.focus();
+                }
+            } else {
+                if (document.activeElement === last) {
+                    e.preventDefault();
+                    first.focus();
+                }
+            }
+        }
+
         function openModal() {
             mdModal.classList.add('active');
+            mdModal.removeAttribute('aria-hidden');
+            document.getElementById('editor-container').setAttribute('aria-hidden', 'true');
+            document.getElementById('toolbar').setAttribute('aria-hidden', 'true');
+            document.getElementById('bottom-left').setAttribute('aria-hidden', 'true');
+            document.getElementById('theme-toggle').setAttribute('aria-hidden', 'true');
             mdInput.value = '';
             mdInput.focus();
+            document.addEventListener('keydown', trapFocus);
         }
 
         function closeModal() {
             mdModal.classList.remove('active');
+            mdModal.setAttribute('aria-hidden', 'true');
+            document.getElementById('editor-container').removeAttribute('aria-hidden');
+            document.getElementById('toolbar').removeAttribute('aria-hidden');
+            document.getElementById('bottom-left').removeAttribute('aria-hidden');
+            document.getElementById('theme-toggle').removeAttribute('aria-hidden');
             editor.focus();
+            document.removeEventListener('keydown', trapFocus);
         }
 
         function insertMarkdown() {
@@ -807,18 +1019,40 @@
             }
 
             const html = markdownToHtml(md);
+            const clean = DOMPurify.sanitize(html, PURIFY_CONFIG);
 
             editor.focus();
 
-            if (editor.innerHTML.trim()) {
-                const space = document.createElement('span');
-                space.innerHTML = ' ';
-                editor.appendChild(space);
+            const sel = window.getSelection();
+            if (sel.rangeCount > 0) {
+                const range = sel.getRangeAt(0);
+                if (editor.contains(range.commonAncestorContainer)) {
+                    range.deleteContents();
+                    const frag = document.createRange().createContextualFragment(clean);
+                    range.insertNode(frag);
+                    range.collapse(false);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                } else {
+                    if (editor.innerHTML.trim()) {
+                        const space = document.createElement('span');
+                        space.innerHTML = ' ';
+                        editor.appendChild(space);
+                    }
+                    const frag = document.createRange().createContextualFragment(clean);
+                    editor.appendChild(frag);
+                }
+            } else {
+                if (editor.innerHTML.trim()) {
+                    const space = document.createElement('span');
+                    space.innerHTML = ' ';
+                    editor.appendChild(space);
+                }
+                const frag = document.createRange().createContextualFragment(clean);
+                editor.appendChild(frag);
             }
 
-            const frag = document.createRange().createContextualFragment(html);
-            editor.appendChild(frag);
-
+            editorPlaceholder.classList.toggle('visible', editor.textContent.trim().length === 0);
             saveContent();
             closeModal();
         }
@@ -846,7 +1080,7 @@
         }
 
         function updateWordCounter() {
-            const text = editor.innerText || '';
+            const text = editor.textContent || '';
             const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
             document.getElementById('word-counter').textContent = wordCount + ' word' + (wordCount === 1 ? '' : 's');
         }
@@ -855,6 +1089,20 @@
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(saveContent, 500);
             updateWordCounter();
+            editorPlaceholder.classList.toggle('visible', editor.textContent.trim().length === 0);
+        });
+
+        editor.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const html = e.clipboardData.getData('text/html');
+            const text = e.clipboardData.getData('text/plain');
+            if (html) {
+                const clean = DOMPurify.sanitize(html, PURIFY_CONFIG);
+                document.execCommand('insertHTML', false, clean);
+            } else if (text) {
+                document.execCommand('insertText', false, text);
+            }
+            editorPlaceholder.classList.toggle('visible', editor.textContent.trim().length === 0);
         });
 
         toolbarBtns.forEach(btn => {
@@ -877,12 +1125,45 @@
         });
 
         window.addEventListener('resize', () => {
-            cancelAnimationFrame(animationId);
-            generateAsciiWave();
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                cancelAnimationFrame(animationId);
+                generateAsciiWave();
+            }, 150);
+        });
+
+        window.addEventListener('beforeunload', () => {
+            clearTimeout(saveTimeout);
+            saveContent();
+        });
+
+        const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+        let reducedMotion = motionQuery.matches;
+
+        motionQuery.addEventListener('change', (e) => {
+            reducedMotion = e.matches;
+            if (reducedMotion) {
+                cancelAnimationFrame(animationId);
+                asciiBg.textContent = '';
+            } else {
+                generateAsciiWave();
+            }
+        });
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                clearTimeout(saveTimeout);
+                saveContent();
+                cancelAnimationFrame(animationId);
+            } else if (!reducedMotion) {
+                generateAsciiWave();
+            }
         });
 
         loadSettings();
-        generateAsciiWave();
+        if (!reducedMotion) {
+            generateAsciiWave();
+        }
     </script>
 </body>
 </html>
