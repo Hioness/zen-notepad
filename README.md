@@ -4,6 +4,8 @@ A minimalist, distraction-free notepad with a zen aesthetic.
 Built with vanilla HTML, CSS, and JS — no build tools required,
 minimal dependencies loaded via CDN.
 
+**[→ Try the live demo](https://notepad-teal-five.vercel.app/)**
+
 ![Zen Notepad Light Theme](assets/screenshot-light.png)
 
 ![Zen Notepad Dark Theme](assets/screenshot-dark.png)
