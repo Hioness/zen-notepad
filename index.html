@@ -609,6 +609,10 @@
         const asciiBg = document.getElementById('ascii-background');
         const toolbarBtns = document.querySelectorAll('.toolbar-btn[data-command]');
         const listBtn = document.querySelector('.toolbar-btn[data-command="insertUnorderedList"]');
+        const boldBtn = document.querySelector('.toolbar-btn[data-command="bold"]');
+        const italicBtn = document.querySelector('.toolbar-btn[data-command="italic"]');
+        const h1Btn = document.querySelector('.toolbar-btn[data-command="formatBlock"][data-value="H1"]');
+        const h2Btn = document.querySelector('.toolbar-btn[data-command="formatBlock"][data-value="H2"]');
         const editorPlaceholder = document.getElementById('editor-placeholder');
 
         const fonts = ['font-sans', 'font-serif', 'font-mono'];
@@ -1173,15 +1177,18 @@
         function updateToolbarActiveState() {
             const sel = window.getSelection();
             if (sel.rangeCount === 0 || !editor.contains(sel.getRangeAt(0).commonAncestorContainer)) {
-                listBtn.classList.remove('active');
+                document.querySelectorAll('.toolbar-btn.active').forEach(btn => btn.classList.remove('active'));
                 return;
             }
             let node = sel.getRangeAt(0).commonAncestorContainer;
             if (node.nodeType === Node.TEXT_NODE) {
                 node = node.parentElement;
             }
-            const inList = node.closest('ul') !== null;
-            listBtn.classList.toggle('active', inList);
+            boldBtn.classList.toggle('active', document.queryCommandState('bold'));
+            italicBtn.classList.toggle('active', document.queryCommandState('italic'));
+            h1Btn.classList.toggle('active', node.closest('h1') !== null);
+            h2Btn.classList.toggle('active', node.closest('h2') !== null);
+            listBtn.classList.toggle('active', node.closest('ul') !== null);
         }
 
         function updateWordCounter() {
