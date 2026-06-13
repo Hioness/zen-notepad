@@ -188,6 +188,21 @@
             font-style: italic;
         }
 
+        #editor ul {
+            margin: 0.8em 0;
+            padding-left: 1.4em;
+        }
+
+        #editor li {
+            margin: 0.35em 0;
+        }
+
+        #editor hr {
+            border: none;
+            border-top: 1px solid var(--border-color);
+            margin: 1.6em 0;
+        }
+
         #toolbar {
             position: fixed;
             bottom: 30px;
@@ -535,7 +550,7 @@
             </div>
             <textarea id="md-input" placeholder="Paste your markdown here..."></textarea>
             <div class="modal-note">
-                Converts: <strong>**bold**</strong>, <em>*italic*</em>, <code># heading</code>, <code>## heading</code>. Other formatting is preserved as plain text.
+                Converts: <strong>**bold**</strong>, <em>*italic*</em>, <code># heading</code>, <code>## heading</code>, <code>- list item</code>, and <code>---</code> rules. Other formatting is preserved as plain text.
             </div>
             <div class="modal-footer">
                 <button id="modal-cancel" class="modal-btn secondary">Cancel</button>
@@ -561,6 +576,17 @@
             <b>H2</b>
             <span class="tooltip">Heading 2</span>
         </button>
+        <button class="toolbar-btn" data-command="insertUnorderedList" aria-label="Bullet list">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="8" y1="6" x2="21" y2="6"></line>
+                <line x1="8" y1="12" x2="21" y2="12"></line>
+                <line x1="8" y1="18" x2="21" y2="18"></line>
+                <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                <line x1="3" y1="18" x2="3.01" y2="18"></line>
+            </svg>
+            <span class="tooltip">Bullet List</span>
+        </button>
         <button class="toolbar-btn" id="font-btn" aria-label="Change font">
             <span class="font-indicator">Aa</span>
             <span class="tooltip">Change Font</span>
@@ -582,6 +608,7 @@
         const copyBtn = document.getElementById('copy-btn');
         const asciiBg = document.getElementById('ascii-background');
         const toolbarBtns = document.querySelectorAll('.toolbar-btn[data-command]');
+        const listBtn = document.querySelector('.toolbar-btn[data-command="insertUnorderedList"]');
         const editorPlaceholder = document.getElementById('editor-placeholder');
 
         const fonts = ['font-sans', 'font-serif', 'font-mono'];
@@ -595,7 +622,7 @@
         const chars = ['█', '▓', '▒', '░', '·'];
 
         const PURIFY_CONFIG = {
-            ALLOWED_TAGS: ['p', 'br', 'div', 'h1', 'h2', 'h3', 'strong', 'b', 'em', 'i', 'ul', 'li', 'blockquote', 'code', 'pre', 'a', 'span'],
+            ALLOWED_TAGS: ['p', 'br', 'div', 'h1', 'h2', 'h3', 'strong', 'b', 'em', 'i', 'ul', 'li', 'hr', 'blockquote', 'code', 'pre', 'a', 'span'],
             ALLOWED_ATTR: ['href', 'class']
         };
 
@@ -659,7 +686,7 @@
                 const clean = DOMPurify.sanitize(savedContent, PURIFY_CONFIG);
                 editor.innerHTML = clean;
             }
-            editorPlaceholder.classList.toggle('visible', editor.textContent.trim().length === 0);
+            editorPlaceholder.classList.toggle('visible', isEditorEmpty());
 
             if (savedFont) {
                 const fontIndex = fonts.indexOf(savedFont);
@@ -785,6 +812,8 @@
                         return content;
                     case 'li':
                         return '- ' + content.trim() + '\n';
+                    case 'hr':
+                        return '---\n\n';
                     case 'blockquote':
                         return '> ' + content.trim().replace(/\n/g, '\n> ') + '\n\n';
                     case 'code':
@@ -882,6 +911,14 @@
                     closeParagraph();
                     closeList();
                     closeBlockquote();
+                    continue;
+                }
+
+                if (/^\s*([-*_])(?:\s*\1){2,}\s*$/.test(line)) {
+                    closeParagraph();
+                    closeList();
+                    closeBlockquote();
+                    html += '<hr>';
                     continue;
                 }
 
@@ -1052,7 +1089,7 @@
                 editor.appendChild(frag);
             }
 
-            editorPlaceholder.classList.toggle('visible', editor.textContent.trim().length === 0);
+            editorPlaceholder.classList.toggle('visible', isEditorEmpty());
             saveContent();
             closeModal();
         }
@@ -1077,6 +1114,74 @@
         function execCommand(command, value = null) {
             document.execCommand(command, false, value);
             editor.focus();
+            updateToolbarActiveState();
+        }
+
+        function getCurrentBlock() {
+            const sel = window.getSelection();
+            if (sel.rangeCount === 0) return null;
+            let node = sel.getRangeAt(0).commonAncestorContainer;
+            if (node.nodeType === Node.TEXT_NODE) {
+                node = node.parentElement;
+            }
+            const block = node.closest('p, li, h1, h2, h3, div');
+            if (block && block !== editor && editor.contains(block)) {
+                return block;
+            }
+            return null;
+        }
+
+        function convertLineToList(block) {
+            const sel = window.getSelection();
+            const range = document.createRange();
+            range.selectNodeContents(block);
+            sel.removeAllRanges();
+            sel.addRange(range);
+            document.execCommand('delete', false, null);
+            document.execCommand('insertUnorderedList', false, null);
+        }
+
+        function convertLineToHr(block) {
+            const hr = document.createElement('hr');
+            const p = document.createElement('p');
+            p.appendChild(document.createElement('br'));
+            const frag = document.createDocumentFragment();
+            frag.appendChild(hr);
+            frag.appendChild(p);
+            block.parentNode.replaceChild(frag, block);
+
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            const range = document.createRange();
+            range.setStart(p, 0);
+            range.collapse(true);
+            sel.addRange(range);
+        }
+
+        function insertHorizontalRule() {
+            editor.focus();
+            const sel = window.getSelection();
+            if (sel.rangeCount > 0 && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+                document.execCommand('insertHTML', false, '<hr><p><br></p>');
+            } else {
+                const frag = document.createRange().createContextualFragment('<hr><p><br></p>');
+                editor.appendChild(frag);
+            }
+            editor.focus();
+        }
+
+        function updateToolbarActiveState() {
+            const sel = window.getSelection();
+            if (sel.rangeCount === 0 || !editor.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+                listBtn.classList.remove('active');
+                return;
+            }
+            let node = sel.getRangeAt(0).commonAncestorContainer;
+            if (node.nodeType === Node.TEXT_NODE) {
+                node = node.parentElement;
+            }
+            const inList = node.closest('ul') !== null;
+            listBtn.classList.toggle('active', inList);
         }
 
         function updateWordCounter() {
@@ -1085,11 +1190,22 @@
             document.getElementById('word-counter').textContent = wordCount + ' word' + (wordCount === 1 ? '' : 's');
         }
 
+        function isEditorEmpty() {
+            const text = editor.textContent || '';
+            if (text.trim().length > 0) return false;
+            if (text.length > 0) return false;
+            if (editor.querySelector('ul, ol, li, hr, h1, h2, h3, blockquote, pre, table, img')) return false;
+
+            const html = editor.innerHTML.trim();
+            const emptyPatterns = ['', '<br>', '<br/>', '<div><br></div>', '<p><br></p>'];
+            return emptyPatterns.includes(html);
+        }
+
         editor.addEventListener('input', () => {
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(saveContent, 500);
             updateWordCounter();
-            editorPlaceholder.classList.toggle('visible', editor.textContent.trim().length === 0);
+            editorPlaceholder.classList.toggle('visible', isEditorEmpty());
         });
 
         editor.addEventListener('paste', (e) => {
@@ -1102,7 +1218,7 @@
             } else if (text) {
                 document.execCommand('insertText', false, text);
             }
-            editorPlaceholder.classList.toggle('visible', editor.textContent.trim().length === 0);
+            editorPlaceholder.classList.toggle('visible', isEditorEmpty());
         });
 
         toolbarBtns.forEach(btn => {
@@ -1121,7 +1237,62 @@
             if (e.key === 'Tab') {
                 e.preventDefault();
                 document.execCommand('insertText', false, '    ');
+                return;
             }
+
+            const mod = e.metaKey || e.ctrlKey;
+            if (mod && e.shiftKey) {
+                if (e.key === '8' || e.key === '*') {
+                    e.preventDefault();
+                    execCommand('insertUnorderedList');
+                    return;
+                }
+                if (e.key === '-' || e.key === '_') {
+                    e.preventDefault();
+                    insertHorizontalRule();
+                    saveContent();
+                    updateWordCounter();
+                    editorPlaceholder.classList.toggle('visible', isEditorEmpty());
+                    updateToolbarActiveState();
+                    return;
+                }
+            }
+
+            if (e.key === ' ' || e.key === 'Spacebar') {
+                const block = getCurrentBlock();
+                if (block) {
+                    const text = block.textContent;
+                    if (/^[-*]$/.test(text)) {
+                        e.preventDefault();
+                        convertLineToList(block);
+                        saveContent();
+                        updateWordCounter();
+                        editorPlaceholder.classList.toggle('visible', isEditorEmpty());
+                        updateToolbarActiveState();
+                        return;
+                    }
+                }
+            }
+
+            if (e.key === 'Enter') {
+                const block = getCurrentBlock();
+                if (block) {
+                    const text = block.textContent.trim();
+                    if (/^[-*_]{3,}$/.test(text)) {
+                        e.preventDefault();
+                        convertLineToHr(block);
+                        saveContent();
+                        updateWordCounter();
+                        editorPlaceholder.classList.toggle('visible', isEditorEmpty());
+                        updateToolbarActiveState();
+                        return;
+                    }
+                }
+            }
+        });
+
+        document.addEventListener('selectionchange', () => {
+            updateToolbarActiveState();
         });
 
         window.addEventListener('resize', () => {
