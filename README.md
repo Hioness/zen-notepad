@@ -23,8 +23,8 @@ respects the `prefers-reduced-motion` system setting.
 
 - **Contenteditable** interface for natural writing
 - **Three font options**: Sans (Inter), Serif (Cormorant Garamond), Mono (JetBrains Mono)
-- **Formatting tools**: Bold, Italic, H1, H2 headings, bullet lists, horizontal rules
-- **Toolbar active-state indicators**: Buttons light up to show when the cursor is in a bold, italic, heading, or list context — no need to guess what formatting is applied
+- **Formatting tools**: Bold, Italic, heading (cycles through H1 → H2 → clear), bullet lists, horizontal rules
+- **Toolbar active-state indicators**: Buttons light up to show when the cursor is in a bold, italic, heading, or list context — the heading button shows the current level (H1/H2) and what the next click will do
 - **Tab key support**: Inserts 4 spaces for indentation
 
 ### 📋 Markdown Export & Import
