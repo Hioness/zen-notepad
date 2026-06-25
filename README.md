@@ -23,7 +23,11 @@ Manage multiple notes with a responsive sidebar:
 - **Per-note font memory**: Each note remembers its font (Mono/Sans/Serif) independently
 - **Font inheritance**: Deleting a note transfers its font to the auto-created replacement
 
-The sidebar is **pinned** on desktop (≥900px), pushing the editor content to the right, and slides as an **overlay** on mobile (<900px) with a backdrop. A floating toggle button is visible when the sidebar is closed; the same button integrates into the sidebar header when open.
+The sidebar is **fixed-position** on desktop (≥900px) — it slides in/out over the content via `transform: translateX()` while shifting the editor area right with an animated `margin-left` for a smooth, GPU-friendly transition. On mobile (<900px) it slides as an **overlay** over the full viewport with a backdrop.
+
+The sidebar list is independently scrollable — the header and "New note" button stay pinned at the top, while the note list scrolls vertically with its own `overflow-y: auto`. The sidebar's fixed positioning is GPU-accelerated with `will-change: transform` for smooth performance.
+
+A floating toggle button is visible when the sidebar is closed; the same button integrates into the sidebar header when open.
 
 ### 🌊 Animated ASCII Wave Background
 
