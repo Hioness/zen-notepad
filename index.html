@@ -1204,11 +1204,13 @@
             }
         }
 
-        function saveContent() {
+        function saveContent(updateTimestamp = true) {
             const activeNote = notes.find(n => n.id === activeNoteId);
             if (activeNote) {
                 activeNote.content = editor.innerHTML;
-                activeNote.updatedAt = new Date().toISOString();
+                if (updateTimestamp) {
+                    activeNote.updatedAt = new Date().toISOString();
+                }
             }
 
             try {
@@ -1268,7 +1270,7 @@
             updateWordCounter();
             updateToolbarActiveState();
             updateScrollPadding();
-            saveContent();
+            saveContent(false);
             renderSidebar();
             if (isSidebarOverlayMode()) {
                 closeSidebar();
@@ -1536,7 +1538,7 @@
                     case 'br':
                         return '\n';
                     case 'div':
-                        return content + '\n';
+                        return content.replace(/\n+$/, '') + '\n';
                     case 'ul':
                         return content;
                     case 'li':
@@ -1992,12 +1994,28 @@
             e.preventDefault();
             const html = e.clipboardData.getData('text/html');
             const text = e.clipboardData.getData('text/plain');
+
+            // Try HTML paste first if we get meaningful content
             if (html) {
                 const clean = DOMPurify.sanitize(html, PURIFY_CONFIG);
-                document.execCommand('insertHTML', false, clean);
-            } else if (text) {
-                document.execCommand('insertText', false, text);
+                if (clean) {
+                    document.execCommand('insertHTML', false, clean);
+                    editorPlaceholder.classList.toggle('visible', isEditorEmpty());
+                    return;
+                }
+                // If DOMPurify stripped everything, fall through to plain text
             }
+
+            // Plain text paste with explicit newline handling
+            if (text) {
+                const lines = text.split('\n');
+                document.execCommand('insertText', false, lines[0]);
+                for (let i = 1; i < lines.length; i++) {
+                    document.execCommand('insertHTML', false, '<br>');
+                    document.execCommand('insertText', false, lines[i]);
+                }
+            }
+
             editorPlaceholder.classList.toggle('visible', isEditorEmpty());
         });
 
