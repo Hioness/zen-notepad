@@ -14,6 +14,7 @@
             --bg-color: #F0EEE6;
             --text-color: #333333;
             --accent-color: #666666;
+            --highlight-color: #9EB8C6;
             --border-color: rgba(0, 0, 0, 0.1);
             --toolbar-bg: rgba(255, 255, 255, 0.9);
             --shadow-color: rgba(0, 0, 0, 0.1);
@@ -27,6 +28,7 @@
             --bg-color: #1a1a1a;
             --text-color: #e0e0e0;
             --accent-color: #999999;
+            --highlight-color: #B8A88A;
             --border-color: rgba(255, 255, 255, 0.15);
             --toolbar-bg: rgba(40, 40, 40, 0.95);
             --shadow-color: rgba(0, 0, 0, 0.3);
@@ -49,6 +51,16 @@
             font-family: 'Inter', sans-serif;
             overflow-x: hidden;
             transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        ::selection {
+            background: var(--highlight-color);
+            color: #1f1f1f;
+        }
+
+        ::-moz-selection {
+            background: var(--highlight-color);
+            color: #1f1f1f;
         }
 
         #ascii-background {
