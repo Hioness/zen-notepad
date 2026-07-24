@@ -40,8 +40,8 @@ respects the `prefers-reduced-motion` system setting.
 
 - **Contenteditable** interface for natural writing
 - **Three font options**: Sans (Inter), Serif (Cormorant Garamond), Mono (JetBrains Mono) — independently per note
-- **Formatting tools**: Bold, Italic, heading (cycles H1 → H2 → clear), bullet lists, horizontal rules
-- **Toolbar active-state indicators**: Buttons light up to show when the cursor is in a bold, italic, heading, or list context — the heading button shows the current level (H1/H2) and what the next click will do
+- **Formatting tools**: Bold, Italic, heading (cycles H1 → H2 → H3 → clear), bullet lists, horizontal rules
+- **Toolbar active-state indicators**: Buttons light up to show when the cursor is in a bold, italic, heading, or list context — the heading button shows the current level (H1/H2/H3) and what the next click will do
 - **Tab key support**: Inserts 4 spaces for indentation
 
 ### 📋 Markdown Export & Import

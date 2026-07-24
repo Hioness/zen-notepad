@@ -196,6 +196,13 @@
             line-height: 1.4;
         }
 
+        #editor h3 {
+            font-size: 1.2em;
+            font-weight: 500;
+            margin: 0.5em 0;
+            line-height: 1.5;
+        }
+
         #editor p {
             margin: 0.8em 0;
         }
@@ -221,6 +228,12 @@
             border: none;
             border-top: 1px solid var(--border-color);
             margin: 1.6em 0;
+        }
+
+        /* Wrapper is transparent on desktop — children keep their own fixed anchors.
+           Below 600px it becomes the docked bottom bar (see media query). */
+        #mobile-bar {
+            display: contents;
         }
 
         #toolbar {
@@ -572,18 +585,59 @@
 
         @media (max-width: 600px) {
             #editor-container {
-                padding: 60px 16px 100px;
+                padding: 60px 16px 80px;
             }
 
             #editor {
                 font-size: 16px;
             }
 
-            #toolbar {
-                bottom: 20px;
-                right: 20px;
-                padding: 8px;
+            /* Docked bottom bar: toolbar + word counter + paste button
+               collapse into one full-width row that cannot self-collide,
+               scrolls horizontally, and rides above the on-screen keyboard
+               (offset driven by the visualViewport handler in the script). */
+            #mobile-bar {
+                display: flex;
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                align-items: center;
                 gap: 4px;
+                padding: 6px 10px calc(6px + env(safe-area-inset-bottom));
+                background: var(--toolbar-bg);
+                border-top: 1px solid var(--border-color);
+                backdrop-filter: blur(10px);
+                overflow-x: auto;
+                scrollbar-width: none;
+                z-index: 100;
+            }
+
+            #mobile-bar::-webkit-scrollbar {
+                display: none;
+            }
+
+            #bottom-left {
+                position: static;
+                flex-direction: row;
+                align-items: center;
+                gap: 4px;
+                flex-shrink: 0;
+                z-index: auto;
+            }
+
+            #toolbar {
+                position: static;
+                flex-shrink: 0;
+                margin-left: auto;
+                padding: 0;
+                gap: 4px;
+                background: transparent;
+                border: none;
+                border-radius: 0;
+                box-shadow: none;
+                opacity: 1;
+                backdrop-filter: none;
             }
 
             .toolbar-btn {
@@ -598,17 +652,25 @@
                 height: 40px;
             }
 
-            #bottom-left {
-                bottom: 20px;
-            }
-
             #word-counter {
                 padding: 8px 12px;
                 font-size: 11px;
+                background: transparent;
+                border-color: transparent;
+                opacity: 1;
             }
 
             #paste-md-btn {
                 padding: 8px 12px;
+                background: transparent;
+                border-color: transparent;
+                opacity: 1;
+            }
+
+            /* Keyboard open: all width goes to actions */
+            #mobile-bar.kbd-open #word-counter,
+            #mobile-bar.kbd-open #paste-md-btn {
+                display: none;
             }
         }
         /* App Layout */
@@ -943,6 +1005,7 @@
 
         <div id="storage-warning">Storage full — copy your text to avoid losing work</div>
 
+        <div id="mobile-bar">
         <div id="bottom-left">
             <button id="paste-md-btn" aria-label="Import Markdown">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -989,6 +1052,7 @@
                 </svg>
                 <span class="tooltip">Copy Markdown</span>
             </button>
+        </div>
         </div>
     </div>
 
@@ -1956,13 +2020,18 @@
             italicBtn.classList.toggle('active', document.queryCommandState('italic'));
             const inH1 = node.closest('h1') !== null;
             const inH2 = node.closest('h2') !== null;
+            const inH3 = node.closest('h3') !== null;
             if (inH1) {
                 headingLabel.textContent = 'H1';
                 headingTooltip.textContent = 'Heading 1 — click for H2';
                 headingBtn.classList.add('active');
             } else if (inH2) {
                 headingLabel.textContent = 'H2';
-                headingTooltip.textContent = 'Heading 2 — click to clear';
+                headingTooltip.textContent = 'Heading 2 — click for H3';
+                headingBtn.classList.add('active');
+            } else if (inH3) {
+                headingLabel.textContent = 'H3';
+                headingTooltip.textContent = 'Heading 3 — click to clear';
                 headingBtn.classList.add('active');
             } else {
                 headingLabel.textContent = 'H';
@@ -2049,6 +2118,8 @@
             if (block.tagName === 'H1') {
                 execCommand('formatBlock', 'H2');
             } else if (block.tagName === 'H2') {
+                execCommand('formatBlock', 'H3');
+            } else if (block.tagName === 'H3') {
                 execCommand('formatBlock', 'P');
             } else {
                 execCommand('formatBlock', 'H1');
@@ -2199,6 +2270,29 @@
                 generateAsciiWave();
             }
         });
+
+        // Mobile bar: ride above the on-screen keyboard. visualViewport shrinks
+        // when the keyboard opens; offset the bar by the difference. The >100px
+        // threshold ignores pinch-zoom and browser chrome show/hide.
+        const mobileBar = document.getElementById('mobile-bar');
+        const slimQuery = window.matchMedia('(max-width: 600px)');
+
+        function updateMobileBar() {
+            if (!slimQuery.matches || !window.visualViewport) {
+                mobileBar.style.bottom = '';
+                mobileBar.classList.remove('kbd-open');
+                return;
+            }
+            const inset = window.innerHeight - window.visualViewport.height;
+            const kbdOpen = inset > 100;
+            mobileBar.style.bottom = kbdOpen ? inset + 'px' : '';
+            mobileBar.classList.toggle('kbd-open', kbdOpen);
+        }
+
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', updateMobileBar);
+        }
+        slimQuery.addEventListener('change', updateMobileBar);
 
         loadSettings();
         updateScrollPadding();
