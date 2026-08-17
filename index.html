@@ -575,12 +575,19 @@
         }
 
         .confirm-btn.danger {
-            background: var(--text-color);
-            color: var(--bg-color);
+            background: transparent;
+            color: var(--critical);
+            border-color: var(--critical);
         }
 
         .confirm-btn.danger:hover {
-            opacity: 0.85;
+            background: var(--critical);
+            color: #fff;
+        }
+
+        [data-theme="dark"] .confirm-btn.danger:hover {
+            background: var(--critical);
+            color: #1a1a1a;
         }
 
         @media (max-width: 600px) {
