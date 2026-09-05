@@ -7,8 +7,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
     <link rel="manifest" href="site.webmanifest">
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"></script>
-    <meta name="theme-color" content="#333333">
+    <meta name="description" content="Zen Notepad — a minimal, offline-ready notepad with calm typography, markdown import and export, and local save.">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; base-uri 'self'; form-action 'self'">
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js" integrity="sha384-vdScihEZCfbPnBQf+lc7LgXUdJVYyhC3yWHUW5C5P5GpHRqVnaM6HJELJxT6IqwM" crossorigin="anonymous"></script>
+    <meta name="theme-color" content="#333333" id="theme-color-meta">
     <style>
         :root {
             --bg-color: #F0EEE6;
@@ -230,10 +232,29 @@
             margin: 1.6em 0;
         }
 
+        .skip-link {
+            position: absolute;
+            left: -9999px;
+            top: 12px;
+            padding: 8px 14px;
+            background: var(--text-color);
+            color: var(--bg-color);
+            border-radius: var(--radius);
+            font-size: 13px;
+            z-index: 500;
+            text-decoration: none;
+        }
+
+        .skip-link:focus {
+            left: 16px;
+        }
+
         /* Wrapper is transparent on desktop — children keep their own fixed anchors.
            Below 600px it becomes the docked bottom bar (see media query). */
         #mobile-bar {
-            display: contents;
+            display: block;
+            height: 0;
+            overflow: visible;
         }
 
         #toolbar {
@@ -300,7 +321,8 @@
             pointer-events: none;
         }
 
-        .toolbar-btn:hover .tooltip {
+        .toolbar-btn:hover .tooltip,
+        .toolbar-btn:focus-visible .tooltip {
             opacity: 1;
             visibility: visible;
         }
@@ -376,7 +398,8 @@
             pointer-events: none;
         }
 
-        #paste-md-btn:hover .tooltip {
+        #paste-md-btn:hover .tooltip,
+        #paste-md-btn:focus-visible .tooltip {
             opacity: 1;
             visibility: visible;
         }
@@ -970,7 +993,9 @@
     </style>
 </head>
 <body>
-    <div id="ascii-background"></div>
+    <a href="#editor" class="skip-link">Skip to editor</a>
+    <div id="ascii-background" aria-hidden="true"></div>
+    <div id="aria-live" class="skip-link" aria-live="polite" aria-atomic="true" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;"></div>
 
     <div class="app-layout">
         <div id="sidebar-overlay" aria-hidden="true"></div>
@@ -1001,16 +1026,16 @@
             </button>
 
             <div id="editor-container">
-                <div id="editor-placeholder" class="font-mono visible">Start writing...</div>
-                <div id="editor" class="font-mono" role="textbox" aria-multiline="true" aria-label="Editor" contenteditable="true" spellcheck="false"></div>
+                <div id="editor-placeholder" class="font-mono visible" aria-hidden="true">Start writing...</div>
+                <div id="editor" class="font-mono" role="textbox" aria-multiline="true" aria-label="Editor" contenteditable="true" spellcheck="false" aria-placeholder="Start writing..."></div>
             </div>
         </div>
 
-        <button id="theme-toggle" aria-label="Toggle theme">
-            <span id="theme-icon">🌙</span>
+        <button id="theme-toggle" aria-label="Toggle theme" aria-pressed="false">
+            <span id="theme-icon" aria-hidden="true">🌙</span>
         </button>
 
-        <div id="storage-warning">Storage full — copy your text to avoid losing work</div>
+        <div id="storage-warning" role="alert" aria-live="assertive">Storage full — copy your text to avoid losing work <button id="storage-copy-all" class="modal-btn secondary" style="margin-left:10px;padding:4px 10px;font-size:12px;" type="button">Copy all notes</button></div>
 
         <div id="mobile-bar">
         <div id="bottom-left">
@@ -1021,23 +1046,23 @@
                 </svg>
                 <span class="tooltip">Import Markdown</span>
             </button>
-            <div id="word-counter">0 words</div>
+            <div id="word-counter" aria-live="polite" aria-atomic="true">0 words</div>
         </div>
 
-        <div id="toolbar">
-            <button class="toolbar-btn" data-command="bold" aria-label="Bold">
+        <div id="toolbar" role="toolbar" aria-label="Formatting toolbar">
+            <button class="toolbar-btn" data-command="bold" aria-label="Bold" aria-pressed="false">
                 <b>B</b>
                 <span class="tooltip">Bold</span>
             </button>
-            <button class="toolbar-btn" data-command="italic" aria-label="Italic">
+            <button class="toolbar-btn" data-command="italic" aria-label="Italic" aria-pressed="false">
                 <i>I</i>
                 <span class="tooltip">Italic</span>
             </button>
-            <button class="toolbar-btn" id="heading-btn" aria-label="Heading">
+            <button class="toolbar-btn" id="heading-btn" aria-label="Heading" aria-pressed="false">
                 <b id="heading-label">H</b>
                 <span class="tooltip" id="heading-tooltip">Heading: Off</span>
             </button>
-            <button class="toolbar-btn" data-command="insertUnorderedList" aria-label="Bullet list">
+            <button class="toolbar-btn" data-command="insertUnorderedList" aria-label="Bullet list" aria-pressed="false">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="8" y1="6" x2="21" y2="6"></line>
                     <line x1="8" y1="12" x2="21" y2="12"></line>
@@ -1121,12 +1146,17 @@
         let saveTimeout;
         let animationId;
         let time = 0;
+        let lastWaveFrame = 0;
+
+        const CHAR_WIDTH = 8.4;
+        const CHAR_HEIGHT = 17;
+        const WAVE_FPS_MS = 80;
 
         const chars = ['█', '▓', '▒', '░', '·'];
 
         const PURIFY_CONFIG = {
             ALLOWED_TAGS: ['p', 'br', 'div', 'h1', 'h2', 'h3', 'strong', 'b', 'em', 'i', 'ul', 'li', 'hr', 'blockquote', 'code', 'pre', 'a', 'span'],
-            ALLOWED_ATTR: ['href', 'class']
+            ALLOWED_ATTR: ['href', 'class', 'rel', 'target']
         };
 
         const confirmOverlay = document.getElementById('confirm-overlay');
@@ -1135,8 +1165,12 @@
         const confirmOk = document.getElementById('confirm-ok');
 
         const storageWarning = document.getElementById('storage-warning');
+        const storageCopyAll = document.getElementById('storage-copy-all');
+        const themeColorMeta = document.getElementById('theme-color-meta');
+        const liveRegion = document.getElementById('aria-live');
         let resizeTimeout;
         let savedRange = null;
+        let confirmPreviousFocus = null;
 
         function showStorageWarning() {
             storageWarning.classList.add('visible');
@@ -1163,9 +1197,14 @@
             }
         }
 
-        function generateAsciiWave() {
-            const width = Math.ceil(window.innerWidth / 8.4) + 2;
-            const height = Math.ceil(window.innerHeight / 17);
+        function generateAsciiWave(timestamp) {
+            if (timestamp && timestamp - lastWaveFrame < WAVE_FPS_MS) {
+                animationId = requestAnimationFrame(generateAsciiWave);
+                return;
+            }
+            lastWaveFrame = timestamp || performance.now();
+            const width = Math.ceil(window.innerWidth / CHAR_WIDTH) + 2;
+            const height = Math.ceil(window.innerHeight / CHAR_HEIGHT);
             let output = '';
 
             for (let y = 0; y < height; y++) {
@@ -1173,7 +1212,6 @@
                     const wave1 = Math.sin((x * 0.1) + (time * 0.02));
                     const wave2 = Math.cos((y * 0.08) + (time * 0.015));
                     const wave3 = Math.sin(((x + y) * 0.05) + (time * 0.01));
-                    
                     const value = (wave1 + wave2 + wave3 + 3) / 6;
                     const charIndex = Math.floor(value * (chars.length - 1));
                     output += chars[Math.min(Math.max(charIndex, 0), chars.length - 1)];
@@ -1182,7 +1220,7 @@
             }
 
             asciiBg.textContent = output;
-            time++;
+            time = (time + 1) % 10000;
             animationId = requestAnimationFrame(generateAsciiWave);
         }
 
@@ -1199,7 +1237,8 @@
 
         function getNoteTitle(html) {
             const temp = document.createElement('div');
-            temp.innerHTML = html;
+            const safe = DOMPurify.sanitize(html || '', PURIFY_CONFIG);
+            temp.innerHTML = safe;
 
             const heading = temp.querySelector('h1, h2, h3');
             if (heading) {
@@ -1268,8 +1307,22 @@
             renderSidebar();
         }
 
+        function syncThemeColor(isDark) {
+            if (themeColorMeta) {
+                themeColorMeta.setAttribute('content', isDark ? '#1a1a1a' : '#F0EEE6');
+            }
+        }
+
+        function announce(text) {
+            if (liveRegion) {
+                liveRegion.textContent = '';
+                setTimeout(() => { liveRegion.textContent = text; }, 50);
+            }
+        }
+
         function loadSettings() {
             const savedTheme = localStorage.getItem('zen-theme');
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 
             loadNotes();
 
@@ -1278,13 +1331,23 @@
                 applyFontToEditor(activeNote.font);
             }
 
-            if (savedTheme === 'dark') {
+            let isDark = false;
+            if (savedTheme === 'dark') isDark = true;
+            else if (savedTheme === 'light') isDark = false;
+            else if (prefersDark) isDark = true;
+
+            if (isDark) {
                 document.body.setAttribute('data-theme', 'dark');
                 themeIcon.textContent = '☀️';
+                themeToggle.setAttribute('aria-pressed', 'true');
+                themeToggle.setAttribute('aria-label', 'Switch to light theme');
             } else {
                 document.body.removeAttribute('data-theme');
                 themeIcon.textContent = '🌙';
+                themeToggle.setAttribute('aria-pressed', 'false');
+                themeToggle.setAttribute('aria-label', 'Switch to dark theme');
             }
+            syncThemeColor(isDark);
         }
 
         function saveContent(updateTimestamp = true) {
@@ -1299,6 +1362,7 @@
             try {
                 localStorage.setItem('zen-notes', JSON.stringify(notes));
                 localStorage.setItem('zen-active-note-id', activeNoteId);
+                try { localStorage.removeItem('zen-content'); } catch (e) {}
                 hideStorageWarning();
             } catch (e) {
                 if (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014) {
@@ -1364,26 +1428,50 @@
         /* ── Confirm Dialog ────────────────────────────────────────────── */
         let confirmCallback = null;
 
+        function trapConfirmFocus(e) {
+            if (e.key !== 'Tab') return;
+            const focusable = confirmOverlay.querySelectorAll('button');
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (e.shiftKey) {
+                if (document.activeElement === first) {
+                    e.preventDefault();
+                    last.focus();
+                }
+            } else {
+                if (document.activeElement === last) {
+                    e.preventDefault();
+                    first.focus();
+                }
+            }
+        }
+
         function showConfirmDialog(message, onConfirm) {
             confirmCallback = onConfirm;
-            confirmMessage.innerHTML = message;
+            confirmPreviousFocus = document.activeElement;
+            const safe = message;
+            confirmMessage.innerHTML = safe;
             confirmOverlay.classList.add('active');
+            document.addEventListener('keydown', trapConfirmFocus);
             confirmCancel.focus();
         }
 
         function hideConfirmDialog() {
             confirmOverlay.classList.remove('active');
+            document.removeEventListener('keydown', trapConfirmFocus);
             confirmCallback = null;
+            if (confirmPreviousFocus && typeof confirmPreviousFocus.focus === 'function') {
+                confirmPreviousFocus.focus();
+                confirmPreviousFocus = null;
+            }
         }
 
         confirmCancel.addEventListener('click', hideConfirmDialog);
 
         confirmOk.addEventListener('click', () => {
-            if (confirmCallback) {
-                confirmCallback();
-                confirmCallback = null;
-            }
+            const cb = confirmCallback;
             hideConfirmDialog();
+            if (cb) cb();
         });
 
         confirmOverlay.addEventListener('click', (e) => {
@@ -1391,6 +1479,38 @@
                 hideConfirmDialog();
             }
         });
+
+        if (storageCopyAll) {
+            storageCopyAll.addEventListener('click', () => {
+                const all = notes.map(n => {
+                    const title = getNoteTitle(n.content);
+                    const tmp = document.createElement('div');
+                    tmp.innerHTML = DOMPurify.sanitize(n.content || '', PURIFY_CONFIG);
+                    const md = htmlToMarkdown(tmp);
+                    return `# ${title}\n\n${md}`;
+                }).join('\n\n---\n\n');
+                function onSuccess() {
+                    const orig = storageCopyAll.textContent;
+                    storageCopyAll.textContent = 'Copied';
+                    setTimeout(() => { storageCopyAll.textContent = orig; }, 1200);
+                    announce('All notes copied');
+                }
+                function onError() {
+                    storageCopyAll.textContent = 'Copy failed';
+                }
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(all).then(onSuccess).catch(() => fallbackCopy(all, onSuccess, onError));
+                } else {
+                    fallbackCopy(all, onSuccess, onError);
+                }
+            });
+        }
+
+        function sanitizeHref(href) {
+            const raw = (href || '').trim();
+            if (/^\s*(javascript|data|vbscript|file):/i.test(raw)) return '#';
+            return raw;
+        }
 
         function escapeHtml(str) {
             const div = document.createElement('div');
@@ -1551,6 +1671,7 @@
 
             const indicator = fontBtn.querySelector('.font-indicator');
             indicator.textContent = fontNames[nextIndex];
+            announce('Font ' + fontNames[nextIndex]);
             setTimeout(() => {
                 indicator.textContent = 'Aa';
             }, 800);
@@ -1561,6 +1682,10 @@
             if (isDark) {
                 document.body.removeAttribute('data-theme');
                 themeIcon.textContent = '🌙';
+                themeToggle.setAttribute('aria-pressed', 'false');
+                themeToggle.setAttribute('aria-label', 'Switch to dark theme');
+                syncThemeColor(false);
+                announce('Light theme');
                 try {
                     localStorage.setItem('zen-theme', 'light');
                 } catch (e) {
@@ -1568,6 +1693,10 @@
             } else {
                 document.body.setAttribute('data-theme', 'dark');
                 themeIcon.textContent = '☀️';
+                themeToggle.setAttribute('aria-pressed', 'true');
+                themeToggle.setAttribute('aria-label', 'Switch to light theme');
+                syncThemeColor(true);
+                announce('Dark theme');
                 try {
                     localStorage.setItem('zen-theme', 'dark');
                 } catch (e) {
@@ -1659,13 +1788,16 @@
             let codeBuffer = '';
 
             function convertInline(text) {
-                text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
-                text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
-                text = text.replace(/(?<!\*)\*\*\*(?!\*)(.+?)(?<!\*)\*\*\*(?!\*)/g, '<strong><em>$1</em></strong>');
-                text = text.replace(/(?<!\*)\*\*(?!\*)(.+?)(?<!\*)\*\*(?!\*)/g, '<strong>$1</strong>');
-                text = text.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
+                text = text.replace(/`([^`]+)`/g, (m, p1) => '<code>' + escapeHtml(p1) + '</code>');
+                text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, p1, p2) => {
+                    const href = sanitizeHref(p2);
+                    return '<a href="' + escapeHtml(href) + '" rel="noopener noreferrer" target="_blank">' + p1 + '</a>';
+                });
+                text = text.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+                text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+                text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
                 text = text.replace(/__(.+?)__/g, '<strong>$1</strong>');
-                text = text.replace(/(?<!\w)_(.+?)_(?!\w)/g, '<em>$1</em>');
+                text = text.replace(/\b_(.+?)_\b/g, '<em>$1</em>');
                 return text;
             }
 
@@ -1692,7 +1824,7 @@
 
             function closeCodeBlock() {
                 if (inCodeBlock) {
-                    html += '</code></pre>';
+                    html += escapeHtml(codeBuffer.replace(/\n$/, '')) + '</code></pre>';
                     inCodeBlock = false;
                     codeBuffer = '';
                 }
@@ -1850,6 +1982,7 @@
         }
 
         function openModal() {
+            saveSelection();
             closeSidebar();
             mdModal.classList.add('active');
             mdModal.removeAttribute('aria-hidden');
@@ -1858,8 +1991,8 @@
             document.getElementById('bottom-left').setAttribute('aria-hidden', 'true');
             document.getElementById('theme-toggle').setAttribute('aria-hidden', 'true');
             document.getElementById('sidebar-toggle').setAttribute('aria-hidden', 'true');
+            document.getElementById('sidebar-toggle-chrome').setAttribute('aria-hidden', 'true');
             document.getElementById('storage-warning').setAttribute('aria-hidden', 'true');
-            saveSelection();
             mdInput.value = '';
             mdInput.focus();
             document.addEventListener('keydown', trapFocus);
@@ -1873,6 +2006,7 @@
             document.getElementById('bottom-left').removeAttribute('aria-hidden');
             document.getElementById('theme-toggle').removeAttribute('aria-hidden');
             document.getElementById('sidebar-toggle').removeAttribute('aria-hidden');
+            document.getElementById('sidebar-toggle-chrome').removeAttribute('aria-hidden');
             document.getElementById('storage-warning').removeAttribute('aria-hidden');
             editor.focus();
             document.removeEventListener('keydown', trapFocus);
@@ -1935,6 +2069,7 @@
             closeModal();
         }
 
+        pasteMdBtn.addEventListener('mousedown', saveSelection);
         pasteMdBtn.addEventListener('click', openModal);
         modalClose.addEventListener('click', closeModal);
         modalCancel.addEventListener('click', closeModal);
@@ -2014,17 +2149,25 @@
         function updateToolbarActiveState() {
             const sel = window.getSelection();
             if (sel.rangeCount === 0 || !editor.contains(sel.getRangeAt(0).commonAncestorContainer)) {
-                document.querySelectorAll('.toolbar-btn.active').forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('.toolbar-btn.active').forEach(btn => {
+                    btn.classList.remove('active');
+                    btn.setAttribute('aria-pressed', 'false');
+                });
                 headingLabel.textContent = 'H';
                 headingTooltip.textContent = 'Heading: Off';
+                headingBtn.setAttribute('aria-pressed', 'false');
                 return;
             }
             let node = sel.getRangeAt(0).commonAncestorContainer;
             if (node.nodeType === Node.TEXT_NODE) {
                 node = node.parentElement;
             }
-            boldBtn.classList.toggle('active', document.queryCommandState('bold'));
-            italicBtn.classList.toggle('active', document.queryCommandState('italic'));
+            const isBold = document.queryCommandState('bold');
+            const isItalic = document.queryCommandState('italic');
+            boldBtn.classList.toggle('active', isBold);
+            boldBtn.setAttribute('aria-pressed', String(isBold));
+            italicBtn.classList.toggle('active', isItalic);
+            italicBtn.setAttribute('aria-pressed', String(isItalic));
             const inH1 = node.closest('h1') !== null;
             const inH2 = node.closest('h2') !== null;
             const inH3 = node.closest('h3') !== null;
@@ -2032,20 +2175,26 @@
                 headingLabel.textContent = 'H1';
                 headingTooltip.textContent = 'Heading 1 — click for H2';
                 headingBtn.classList.add('active');
+                headingBtn.setAttribute('aria-pressed', 'true');
             } else if (inH2) {
                 headingLabel.textContent = 'H2';
                 headingTooltip.textContent = 'Heading 2 — click for H3';
                 headingBtn.classList.add('active');
+                headingBtn.setAttribute('aria-pressed', 'true');
             } else if (inH3) {
                 headingLabel.textContent = 'H3';
                 headingTooltip.textContent = 'Heading 3 — click to clear';
                 headingBtn.classList.add('active');
+                headingBtn.setAttribute('aria-pressed', 'true');
             } else {
                 headingLabel.textContent = 'H';
                 headingTooltip.textContent = 'Heading: Off';
                 headingBtn.classList.remove('active');
+                headingBtn.setAttribute('aria-pressed', 'false');
             }
-            listBtn.classList.toggle('active', node.closest('ul') !== null);
+            const inList = node.closest('ul') !== null;
+            listBtn.classList.toggle('active', inList);
+            listBtn.setAttribute('aria-pressed', String(inList));
         }
 
         function updateWordCounter() {
@@ -2062,11 +2211,10 @@
         function isEditorEmpty() {
             const text = editor.textContent || '';
             if (text.trim().length > 0) return false;
-            if (text.length > 0) return false;
             if (editor.querySelector('ul, ol, li, hr, h1, h2, h3, blockquote, pre, table, img')) return false;
 
-            const html = editor.innerHTML.trim();
-            const emptyPatterns = ['', '<br>', '<br/>', '<div><br></div>', '<p><br></p>'];
+            const html = editor.innerHTML.trim().toLowerCase();
+            const emptyPatterns = ['', '<br>', '<br/>', '<br />', '<div><br></div>', '<div><br/></div>', '<p><br></p>', '<p><br/></p>'];
             return emptyPatterns.includes(html);
         }
 
