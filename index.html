@@ -313,9 +313,13 @@
             font-family: 'JetBrains Mono', monospace;
         }
 
-        .font-serif {
+        #editor.font-serif,
+        #editor-placeholder.font-serif {
             font-family: 'Cormorant Garamond', serif;
-            font-size: 20px;
+            /* Cormorant has a small x-height, so it looks ~20% smaller
+               than Inter / JetBrains Mono at the same px size. */
+            font-size: 22px;
+            line-height: 1.6;
         }
 
         .font-sans {
@@ -760,6 +764,11 @@
                 font-size: 16px;
             }
 
+            #editor.font-serif,
+            #editor-placeholder.font-serif {
+                font-size: 20px;
+            }
+
             /* Docked bottom bar: toolbar + word counter + paste button
                collapse into one full-width row that cannot self-collide,
                scrolls horizontally, and rides above the on-screen keyboard
@@ -772,6 +781,10 @@
                 bottom: 0;
                 align-items: center;
                 gap: 4px;
+                /* Override the desktop height: 0 — without this the bar
+                   collapses: overflow-x: auto forces computed overflow-y to
+                   auto, which clips the controls into a 0-height box. */
+                height: auto;
                 padding: 6px 10px calc(6px + env(safe-area-inset-bottom));
                 background: var(--toolbar-bg);
                 border-top: 1px solid var(--border-color);
