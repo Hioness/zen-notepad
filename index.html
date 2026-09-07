@@ -4,14 +4,127 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zen Notepad</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preload" href="assets/fonts/inter-400-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="assets/fonts/jetbrainsmono-400-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
     <link rel="manifest" href="site.webmanifest">
     <meta name="description" content="Zen Notepad — a minimal, offline-ready notepad with calm typography, markdown import and export, and local save.">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; base-uri 'self'; form-action 'self'">
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js" integrity="sha384-vdScihEZCfbPnBQf+lc7LgXUdJVYyhC3yWHUW5C5P5GpHRqVnaM6HJELJxT6IqwM" crossorigin="anonymous"></script>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; base-uri 'self'; form-action 'self'">
     <meta name="theme-color" content="#333333" id="theme-color-meta">
     <style>
+        @font-face {
+            font-family: 'Cormorant Garamond';
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+            src: url('assets/fonts/cormorantgaramond-400-latin-ext.woff2') format('woff2');
+            unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+        }
+        @font-face {
+            font-family: 'Cormorant Garamond';
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+            src: url('assets/fonts/cormorantgaramond-400-latin.woff2') format('woff2');
+            unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+        }
+        @font-face {
+            font-family: 'Cormorant Garamond';
+            font-style: normal;
+            font-weight: 500;
+            font-display: swap;
+            src: url('assets/fonts/cormorantgaramond-500-latin-ext.woff2') format('woff2');
+            unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+        }
+        @font-face {
+            font-family: 'Cormorant Garamond';
+            font-style: normal;
+            font-weight: 500;
+            font-display: swap;
+            src: url('assets/fonts/cormorantgaramond-500-latin.woff2') format('woff2');
+            unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+        }
+        @font-face {
+            font-family: 'Inter';
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+            src: url('assets/fonts/inter-400-latin-ext.woff2') format('woff2');
+            unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+        }
+        @font-face {
+            font-family: 'Inter';
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+            src: url('assets/fonts/inter-400-latin.woff2') format('woff2');
+            unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+        }
+        @font-face {
+            font-family: 'Inter';
+            font-style: normal;
+            font-weight: 500;
+            font-display: swap;
+            src: url('assets/fonts/inter-500-latin-ext.woff2') format('woff2');
+            unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+        }
+        @font-face {
+            font-family: 'Inter';
+            font-style: normal;
+            font-weight: 500;
+            font-display: swap;
+            src: url('assets/fonts/inter-500-latin.woff2') format('woff2');
+            unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+        }
+        @font-face {
+            font-family: 'Inter';
+            font-style: normal;
+            font-weight: 600;
+            font-display: swap;
+            src: url('assets/fonts/inter-600-latin-ext.woff2') format('woff2');
+            unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+        }
+        @font-face {
+            font-family: 'Inter';
+            font-style: normal;
+            font-weight: 600;
+            font-display: swap;
+            src: url('assets/fonts/inter-600-latin.woff2') format('woff2');
+            unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+        }
+        @font-face {
+            font-family: 'JetBrains Mono';
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+            src: url('assets/fonts/jetbrainsmono-400-latin-ext.woff2') format('woff2');
+            unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+        }
+        @font-face {
+            font-family: 'JetBrains Mono';
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+            src: url('assets/fonts/jetbrainsmono-400-latin.woff2') format('woff2');
+            unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+        }
+        @font-face {
+            font-family: 'JetBrains Mono';
+            font-style: normal;
+            font-weight: 500;
+            font-display: swap;
+            src: url('assets/fonts/jetbrainsmono-500-latin-ext.woff2') format('woff2');
+            unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+        }
+        @font-face {
+            font-family: 'JetBrains Mono';
+            font-style: normal;
+            font-weight: 500;
+            font-display: swap;
+            src: url('assets/fonts/jetbrainsmono-500-latin.woff2') format('woff2');
+            unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+        }
         :root {
             --bg-color: #F0EEE6;
             --text-color: #333333;
@@ -80,6 +193,8 @@
             white-space: pre;
             overflow: hidden;
             color: var(--text-color);
+            contain: strict;
+            transform: translateZ(0);
         }
 
         #theme-toggle {
@@ -757,7 +872,6 @@
             overflow: hidden;
             z-index: 150;
             box-shadow: 4px 0 20px var(--shadow-color);
-            will-change: transform;
         }
 
         #sidebar.open {
@@ -1115,6 +1229,7 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js" integrity="sha384-vdScihEZCfbPnBQf+lc7LgXUdJVYyhC3yWHUW5C5P5GpHRqVnaM6HJELJxT6IqwM" crossorigin="anonymous"></script>
     <script>
         const editor = document.getElementById('editor');
         const themeToggle = document.getElementById('theme-toggle');
@@ -1144,13 +1259,22 @@
         let activeNoteId = null;
 
         let saveTimeout;
-        let animationId;
+        let animationId = 0;
         let time = 0;
+        let lastPersistedNotesJSON = '';
+        let lastPersistedActiveId = '';
+        let sidebarTitleTimeout = 0;
+        let lastTitledId = null;
+        let lastTitledContent = null;
         let lastWaveFrame = 0;
+        let cachedWaveCols = 0;
+        let cachedWaveRows = 0;
+        let reducedMotion = false;
 
         const CHAR_WIDTH = 8.4;
         const CHAR_HEIGHT = 17;
-        const WAVE_FPS_MS = 80;
+        // 8.3fps: identical calm at 0.08 opacity, ~1/3 less CPU + GPU + battery.
+        const WAVE_FPS_MS = 120;
 
         const chars = ['█', '▓', '▒', '░', '·'];
 
@@ -1197,29 +1321,53 @@
             }
         }
 
+        function measureWaveGrid() {
+            cachedWaveCols = Math.ceil(window.innerWidth / CHAR_WIDTH) + 2;
+            cachedWaveRows = Math.ceil(window.innerHeight / CHAR_HEIGHT);
+        }
+
+        function startWave() {
+            if (animationId || reducedMotion) return;
+            measureWaveGrid();
+            lastWaveFrame = 0;
+            animationId = requestAnimationFrame(generateAsciiWave);
+        }
+
+        function stopWave() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = 0;
+            }
+        }
+
         function generateAsciiWave(timestamp) {
+            animationId = 0;
+            if (reducedMotion || document.visibilityState === 'hidden' || !document.hasFocus()) {
+                return;
+            }
             if (timestamp && timestamp - lastWaveFrame < WAVE_FPS_MS) {
                 animationId = requestAnimationFrame(generateAsciiWave);
                 return;
             }
             lastWaveFrame = timestamp || performance.now();
-            const width = Math.ceil(window.innerWidth / CHAR_WIDTH) + 2;
-            const height = Math.ceil(window.innerHeight / CHAR_HEIGHT);
-            let output = '';
+            const width = cachedWaveCols || (measureWaveGrid(), cachedWaveCols);
+            const height = cachedWaveRows || cachedWaveRows;
+            const rows = new Array(height);
 
             for (let y = 0; y < height; y++) {
+                const row = new Array(width);
                 for (let x = 0; x < width; x++) {
                     const wave1 = Math.sin((x * 0.1) + (time * 0.02));
                     const wave2 = Math.cos((y * 0.08) + (time * 0.015));
                     const wave3 = Math.sin(((x + y) * 0.05) + (time * 0.01));
                     const value = (wave1 + wave2 + wave3 + 3) / 6;
                     const charIndex = Math.floor(value * (chars.length - 1));
-                    output += chars[Math.min(Math.max(charIndex, 0), chars.length - 1)];
+                    row[x] = chars[Math.min(Math.max(charIndex, 0), chars.length - 1)];
                 }
-                output += '\n';
+                rows[y] = row.join('');
             }
 
-            asciiBg.textContent = output;
+            asciiBg.textContent = rows.join('\n') + '\n';
             time = (time + 1) % 10000;
             animationId = requestAnimationFrame(generateAsciiWave);
         }
@@ -1353,30 +1501,55 @@
         function saveContent(updateTimestamp = true) {
             const activeNote = notes.find(n => n.id === activeNoteId);
             if (activeNote) {
-                activeNote.content = editor.innerHTML;
-                if (updateTimestamp) {
+                const nextContent = editor.innerHTML;
+                const contentChanged = activeNote.content !== nextContent;
+                activeNote.content = nextContent;
+                if (updateTimestamp && contentChanged) {
                     activeNote.updatedAt = new Date().toISOString();
                 }
             }
 
-            try {
-                localStorage.setItem('zen-notes', JSON.stringify(notes));
-                localStorage.setItem('zen-active-note-id', activeNoteId);
-                try { localStorage.removeItem('zen-content'); } catch (e) {}
-                hideStorageWarning();
-            } catch (e) {
-                if (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014) {
-                    showStorageWarning();
+            const notesJSON = JSON.stringify(notes);
+            const activeChanged = activeNoteId !== lastPersistedActiveId;
+            const notesChanged = notesJSON !== lastPersistedNotesJSON;
+            if (notesChanged || activeChanged) {
+                try {
+                    if (notesChanged) {
+                        localStorage.setItem('zen-notes', notesJSON);
+                        lastPersistedNotesJSON = notesJSON;
+                    }
+                    if (activeChanged) {
+                        localStorage.setItem('zen-active-note-id', activeNoteId);
+                        lastPersistedActiveId = activeNoteId;
+                    }
+                    try { localStorage.removeItem('zen-content'); } catch (e) {}
+                    hideStorageWarning();
+                } catch (e) {
+                    if (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014) {
+                        showStorageWarning();
+                    }
                 }
             }
 
             if (activeNote) {
-                const item = sidebarNotes.querySelector(`[data-note-id="${activeNoteId}"]`);
+                scheduleSidebarTitle(activeNoteId, activeNote.content);
+            }
+        }
+
+        function scheduleSidebarTitle(id, content) {
+            if (id === lastTitledId && content === lastTitledContent) return;
+            clearTimeout(sidebarTitleTimeout);
+            sidebarTitleTimeout = setTimeout(() => {
+                sidebarTitleTimeout = 0;
+                if (id === lastTitledId && content === lastTitledContent) return;
+                lastTitledId = id;
+                lastTitledContent = content;
+                const item = sidebarNotes.querySelector(`[data-note-id="${id}"]`);
                 if (item) {
                     const titleEl = item.querySelector('.sidebar-note-title');
-                    if (titleEl) titleEl.textContent = getNoteTitle(activeNote.content);
+                    if (titleEl) titleEl.textContent = getNoteTitle(content);
                 }
-            }
+            }, 300);
         }
 
         function createNote() {
@@ -1562,8 +1735,9 @@
         function renderSidebar() {
             const sorted = [...notes].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
 
-            sidebarNotes.innerHTML = '';
+            const frag = document.createDocumentFragment();
             for (const note of sorted) {
+                const title = getNoteTitle(note.content);
                 const item = document.createElement('div');
                 item.className = 'sidebar-note-item' + (note.id === activeNoteId ? ' active' : '');
                 item.setAttribute('data-note-id', note.id);
@@ -1571,11 +1745,11 @@
                 const titleBtn = document.createElement('button');
                 titleBtn.className = 'sidebar-note-title-btn';
                 titleBtn.setAttribute('type', 'button');
-                titleBtn.setAttribute('aria-label', 'Open note: ' + getNoteTitle(note.content));
+                titleBtn.setAttribute('aria-label', 'Open note: ' + title);
 
                 const titleSpan = document.createElement('span');
                 titleSpan.className = 'sidebar-note-title';
-                titleSpan.textContent = getNoteTitle(note.content);
+                titleSpan.textContent = title;
 
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'sidebar-note-delete';
@@ -1586,8 +1760,14 @@
                 titleBtn.appendChild(titleSpan);
                 item.appendChild(titleBtn);
                 item.appendChild(deleteBtn);
-                sidebarNotes.appendChild(item);
+                frag.appendChild(item);
             }
+            sidebarNotes.replaceChildren(frag);
+            clearTimeout(sidebarTitleTimeout);
+            sidebarTitleTimeout = 0;
+            const active = notes.find(n => n.id === activeNoteId);
+            lastTitledId = activeNoteId;
+            lastTitledContent = active ? active.content : null;
         }
 
         function trapSidebarFocus(e) {
@@ -2208,6 +2388,17 @@
             editor.classList.toggle('has-overflow', hasOverflow);
         }
 
+        let scrollPaddingRaf = 0;
+        let selectionRaf = 0;
+
+        function scheduleScrollPadding() {
+            if (scrollPaddingRaf) return;
+            scrollPaddingRaf = requestAnimationFrame(() => {
+                scrollPaddingRaf = 0;
+                updateScrollPadding();
+            });
+        }
+
         function isEditorEmpty() {
             const text = editor.textContent || '';
             if (text.trim().length > 0) return false;
@@ -2222,7 +2413,7 @@
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(saveContent, 500);
             updateWordCounter();
-            updateScrollPadding();
+            scheduleScrollPadding();
             editorPlaceholder.classList.toggle('visible', isEditorEmpty());
         });
 
@@ -2386,15 +2577,20 @@
         });
 
         document.addEventListener('selectionchange', () => {
-            updateToolbarActiveState();
+            if (selectionRaf) return;
+            selectionRaf = requestAnimationFrame(() => {
+                selectionRaf = 0;
+                updateToolbarActiveState();
+            });
         });
 
         window.addEventListener('resize', () => {
             clearTimeout(resizeTimeout);
             resizeTimeout = setTimeout(() => {
-                cancelAnimationFrame(animationId);
-                generateAsciiWave();
-                updateScrollPadding();
+                stopWave();
+                measureWaveGrid();
+                startWave();
+                scheduleScrollPadding();
             }, 150);
         });
 
@@ -2404,15 +2600,15 @@
         });
 
         const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-        let reducedMotion = motionQuery.matches;
+        reducedMotion = motionQuery.matches;
 
         motionQuery.addEventListener('change', (e) => {
             reducedMotion = e.matches;
             if (reducedMotion) {
-                cancelAnimationFrame(animationId);
+                stopWave();
                 asciiBg.textContent = '';
             } else {
-                generateAsciiWave();
+                startWave();
             }
         });
 
@@ -2420,10 +2616,15 @@
             if (document.visibilityState === 'hidden') {
                 clearTimeout(saveTimeout);
                 saveContent();
-                cancelAnimationFrame(animationId);
+                stopWave();
             } else if (!reducedMotion) {
-                generateAsciiWave();
+                startWave();
             }
+        });
+
+        window.addEventListener('blur', stopWave);
+        window.addEventListener('focus', () => {
+            if (!reducedMotion && document.visibilityState !== 'hidden') startWave();
         });
 
         // Mobile bar: ride above the on-screen keyboard. visualViewport shrinks
@@ -2450,9 +2651,15 @@
         slimQuery.addEventListener('change', updateMobileBar);
 
         loadSettings();
-        updateScrollPadding();
+        scheduleScrollPadding();
         if (!reducedMotion) {
-            generateAsciiWave();
+            startWave();
+        }
+
+        if ('serviceWorker' in navigator && /^https?:$/.test(window.location.protocol)) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(() => {});
+            });
         }
     </script>
 </body>

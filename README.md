@@ -1,14 +1,15 @@
 # Zen Notepad
 
 A minimalist, distraction-free notepad with a zen aesthetic.
-Built with vanilla HTML, CSS, and JS — no build tools required,
-minimal dependencies loaded via CDN.
+Built with vanilla HTML, CSS, and JS — no build tools required.
+Fonts are self-hosted (no third-party font requests); DOMPurify
+loads via CDN and is cached offline by the service worker.
 
 **[→ Try the live demo](https://notepad-teal-five.vercel.app/)**
 
-![Zen Notepad Light Theme](assets/screenshot-light.png)
+![Zen Notepad Light Theme](assets/screenshot-light.webp)
 
-![Zen Notepad Dark Theme](assets/screenshot-dark.png)
+![Zen Notepad Dark Theme](assets/screenshot-dark.webp)
 
 ## Features
 
@@ -19,13 +20,13 @@ Manage multiple notes with a responsive sidebar:
 - **Create** notes with the "+ New note" button
 - **Switch** between notes by clicking titles in the sidebar
 - **Delete** notes with the × button (confirm dialog with Shift+click bypass)
-- **Auto-save**: All notes are persisted to localStorage — nothing is lost on reload
+- **Auto-save**: All notes are persisted to localStorage — nothing is lost on reload. Writes are skipped when nothing changed, and sidebar titles refresh on a short debounce so typing never pays for sanitizing.
 - **Per-note font memory**: Each note remembers its font (Mono/Sans/Serif) independently
 - **Font inheritance**: Deleting a note transfers its font to the auto-created replacement
 
 The sidebar is **fixed-position** on desktop (≥900px) — it slides in/out over the content via `transform: translateX()` while shifting the editor area right with an animated `margin-left` for a smooth, GPU-friendly transition. On mobile (<900px) it slides as an **overlay** over the full viewport with a backdrop.
 
-The sidebar list is independently scrollable — the header and "New note" button stay pinned at the top, while the note list scrolls vertically with its own `overflow-y: auto`. The sidebar's fixed positioning is GPU-accelerated with `will-change: transform` for smooth performance.
+The sidebar list is independently scrollable — the header and "New note" button stay pinned at the top, while the note list scrolls vertically with its own `overflow-y: auto`. Transform transitions are already GPU-composited, so no permanent `will-change` hint is held.
 
 A floating toggle button is visible when the sidebar is closed; the same button integrates into the sidebar header when open.
 
@@ -33,8 +34,8 @@ A floating toggle button is visible when the sidebar is closed; the same button 
 
 A subtle, animated background featuring wave patterns created with block characters
 (`█▓▒░·`). The animation uses sine and cosine functions to create a calming,
-ever-changing visual effect. Automatically pauses when the tab is hidden and
-respects the `prefers-reduced-motion` system setting.
+ever-changing visual effect at ~8 fps. Automatically pauses when the tab is hidden
+or the window loses focus, and respects the `prefers-reduced-motion` system setting.
 
 ### ✍️ Rich Text Editor
 
@@ -130,11 +131,13 @@ Delete confirmations use a custom modal overlay instead of the browser's native 
 
 ## Technical Details
 
-- **No build process**: Pure HTML/CSS/JS in a single file
-- **CDN dependencies**: Google Fonts via `fonts.googleapis.com` + DOMPurify via jsDelivr
-- **LocalStorage**: Used for persisting notes, fonts, and theme preferences
+- **No build process**: Pure HTML/CSS/JS plus a small service worker (`sw.js`)
+- **Fonts**: Self-hosted woff2 (latin + latin-ext) with `font-display: swap`; the two critical faces are preloaded
+- **CDN dependencies**: DOMPurify via jsDelivr (cached offline by the service worker after first load)
+- **Offline**: Service worker precaches the app shell + critical fonts; repeat visits work without network
+- **LocalStorage**: Used for persisting notes, fonts, and theme preferences (unchanged writes are skipped)
 - **Clipboard API**: For copying formatted markdown, with `execCommand` fallback
-- **requestAnimationFrame**: For smooth ASCII background animation
+- **requestAnimationFrame**: For smooth ASCII background animation (throttled, paused off-focus)
 
 ## Browser Support
 
@@ -150,11 +153,13 @@ Works in all modern browsers that support:
 
 ```text
 .
-├── index.html          # Main application (single-file)
+├── index.html          # Main application
+├── sw.js               # Service worker (offline shell + asset cache)
 ├── assets/
 │   ├── favicon.svg     # Notepad icon
-│   ├── screenshot-light.png  # Light theme screenshot
-│   └── screenshot-dark.png   # Dark theme screenshot
+│   ├── fonts/          # Self-hosted woff2 (latin + latin-ext)
+│   ├── screenshot-light.webp  # Light theme screenshot
+│   └── screenshot-dark.webp   # Dark theme screenshot
 ├── site.webmanifest    # PWA manifest
 ├── temp/               # Scratch workspace (gitignored)
 └── README.md           # This file
