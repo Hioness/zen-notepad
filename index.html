@@ -938,7 +938,8 @@
         }
 
         /* Toggle inside sidebar header — visible when sidebar is open */
-        #sidebar-toggle {
+        #sidebar-toggle,
+        #effects-toggle {
             width: 44px;
             height: 44px;
             border-radius: var(--radius);
@@ -953,12 +954,26 @@
             flex-shrink: 0;
         }
 
-        #sidebar-toggle:hover {
+        #sidebar-toggle:hover,
+        #effects-toggle:hover {
             transform: scale(1.1);
             box-shadow: 0 4px 12px var(--shadow-color);
         }
 
+        /* Ambient effects off: dim the toggle so state is visible at a glance. */
+        #effects-toggle[aria-pressed="false"] {
+            opacity: 0.45;
+            color: var(--accent-color);
+        }
+
+        #effects-toggle[aria-pressed="false"]:hover {
+            opacity: 1;
+            color: var(--text-color);
+        }
+
         .sidebar-header h2 {
+            flex: 1;
+            text-align: center;
             font-size: 16px;
             font-weight: 500;
             margin: 0;
@@ -987,62 +1002,6 @@
             overflow-y: auto;
             min-height: 0;
             padding: 8px 12px 20px;
-        }
-
-        #sidebar-settings {
-            border-top: 1px solid var(--border-color);
-            padding: 10px 12px calc(12px + env(safe-area-inset-bottom));
-            flex-shrink: 0;
-        }
-
-        #settings-toggle {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            width: 100%;
-            background: transparent;
-            border: none;
-            color: var(--accent-color);
-            font-size: 13px;
-            font-family: 'Inter', sans-serif;
-            cursor: pointer;
-            padding: 8px 10px;
-            border-radius: var(--radius);
-        }
-
-        #settings-toggle:hover {
-            background: var(--border-color);
-            color: var(--text-color);
-        }
-
-        #settings-panel {
-            padding: 4px 10px 6px;
-        }
-
-        #settings-panel[hidden] {
-            display: none;
-        }
-
-        .setting-option {
-            display: flex;
-            align-items: baseline;
-            gap: 8px;
-            font-size: 13px;
-            color: var(--text-color);
-            padding: 3px 0;
-            margin-top: 8px;
-            cursor: pointer;
-        }
-
-        .setting-hint {
-            font-size: 12px;
-            color: var(--accent-color);
-            margin: 0 0 2px 24px;
-            line-height: 1.4;
-        }
-
-        input[type="checkbox"] {
-            accent-color: var(--accent-color);
         }
 
         .sidebar-note-item {
@@ -1136,7 +1095,8 @@
                 height: 40px;
             }
 
-            #sidebar-toggle {
+            #sidebar-toggle,
+            #effects-toggle {
                 width: 40px;
                 height: 40px;
             }
@@ -1223,29 +1183,14 @@
                         </svg>
                     </button>
                     <h2>Notes</h2>
+                    <button id="effects-toggle" type="button" aria-pressed="true" aria-label="Turn ambient effects off" title="Ambient effects on — turn off for a solid, still background">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                        </svg>
+                    </button>
                 </div>
                 <button id="new-note-btn" type="button">+ New note</button>
                 <div id="sidebar-notes"></div>
-                <div id="sidebar-settings">
-                    <button id="settings-toggle" type="button" aria-expanded="false" aria-controls="settings-panel">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <line x1="4" y1="21" x2="4" y2="14"></line>
-                            <line x1="4" y1="10" x2="4" y2="3"></line>
-                            <line x1="12" y1="21" x2="12" y2="12"></line>
-                            <line x1="12" y1="8" x2="12" y2="3"></line>
-                            <line x1="20" y1="21" x2="20" y2="16"></line>
-                            <line x1="20" y1="12" x2="20" y2="3"></line>
-                            <line x1="1" y1="14" x2="7" y2="14"></line>
-                            <line x1="9" y1="8" x2="15" y2="8"></line>
-                            <line x1="17" y1="16" x2="23" y2="16"></line>
-                        </svg>
-                        <span>Display</span>
-                    </button>
-                    <div id="settings-panel" hidden>
-                        <label class="setting-option"><input type="checkbox" id="setting-effects"> Ambient effects</label>
-                        <p class="setting-hint">Animated wave and frosted glass. Off is solid and still, and saves battery.</p>
-                    </div>
-                </div>
             </div>
         </nav>
 
@@ -1389,6 +1334,7 @@
         let cachedWaveCols = 0;
         let cachedWaveRows = 0;
         let reducedMotion = false;
+        const DISPLAY_SETTINGS_KEY = 'zen-settings';
         let displaySettings = loadDisplaySettings();
 
         const CHAR_WIDTH = 8.4;
@@ -1441,8 +1387,6 @@
             }
         }
 
-        const DISPLAY_SETTINGS_KEY = 'zen-settings';
-
         function loadDisplaySettings() {
             try {
                 const raw = JSON.parse(localStorage.getItem(DISPLAY_SETTINGS_KEY) || '{}');
@@ -1460,8 +1404,12 @@
 
         function applyDisplaySettings() {
             document.body.classList.toggle('effects-off', !displaySettings.effects);
-            const effectsBox = document.getElementById('setting-effects');
-            if (effectsBox) effectsBox.checked = displaySettings.effects;
+            const effectsToggle = document.getElementById('effects-toggle');
+            if (effectsToggle) {
+                effectsToggle.setAttribute('aria-pressed', String(displaySettings.effects));
+                effectsToggle.setAttribute('aria-label', displaySettings.effects ? 'Turn ambient effects off' : 'Turn ambient effects on');
+                effectsToggle.setAttribute('title', displaySettings.effects ? 'Ambient effects on — turn off for a solid, still background' : 'Ambient effects off — turn on for wave and frosted glass');
+            }
         }
 
         function effectsOn() {
@@ -1923,7 +1871,7 @@
 
         function trapSidebarFocus(e) {
             if (e.key !== 'Tab') return;
-            const focusable = sidebar.querySelectorAll('button, input, select, textarea, [tabindex]:not([tabindex="-1"])');
+            const focusable = sidebar.querySelectorAll('button, [tabindex]:not([tabindex="-1"])');
             const visible = Array.from(focusable).filter(el => el.offsetParent !== null);
             if (visible.length === 0) return;
             const first = visible[0];
@@ -2636,33 +2584,19 @@
         });
         newNoteBtn.addEventListener('click', createNote);
 
-        const settingsToggle = document.getElementById('settings-toggle');
-        const settingsPanel = document.getElementById('settings-panel');
+        const effectsToggle = document.getElementById('effects-toggle');
 
-        settingsToggle.addEventListener('click', () => {
-            const opening = settingsPanel.hasAttribute('hidden');
-            if (opening) {
-                settingsPanel.removeAttribute('hidden');
-                settingsToggle.setAttribute('aria-expanded', 'true');
+        effectsToggle.addEventListener('click', () => {
+            displaySettings.effects = !displaySettings.effects;
+            persistDisplaySettings();
+            applyDisplaySettings();
+            if (displaySettings.effects) {
+                startWave();
             } else {
-                settingsPanel.setAttribute('hidden', '');
-                settingsToggle.setAttribute('aria-expanded', 'false');
+                stopWave();
+                asciiBg.textContent = '';
             }
-        });
-
-        settingsPanel.addEventListener('change', (e) => {
-            if (e.target.id === 'setting-effects') {
-                displaySettings.effects = e.target.checked;
-                persistDisplaySettings();
-                applyDisplaySettings();
-                if (displaySettings.effects) {
-                    startWave();
-                } else {
-                    stopWave();
-                    asciiBg.textContent = '';
-                }
-                announce('Ambient effects ' + (displaySettings.effects ? 'on' : 'off'));
-            }
+            announce('Ambient effects ' + (displaySettings.effects ? 'on' : 'off'));
         });
 
         sidebarNotes.addEventListener('click', (e) => {
