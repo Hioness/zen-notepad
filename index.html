@@ -197,6 +197,29 @@
             transform: translateZ(0);
         }
 
+        /* Display option off: solid chrome, no wave layer at all. */
+        body.effects-off {
+            --toolbar-bg: #FEFDFC;
+        }
+
+        body.effects-off[data-theme="dark"] {
+            --toolbar-bg: #272727;
+        }
+
+        body.effects-off #ascii-background {
+            display: none;
+        }
+
+        body.effects-off #theme-toggle,
+        body.effects-off #storage-warning,
+        body.effects-off #toolbar,
+        body.effects-off #word-counter,
+        body.effects-off #paste-md-btn,
+        body.effects-off .modal-content,
+        body.effects-off #mobile-bar {
+            backdrop-filter: none;
+        }
+
         #theme-toggle {
             position: fixed;
             top: 20px;
@@ -953,6 +976,62 @@
             padding: 8px 12px 20px;
         }
 
+        #sidebar-settings {
+            border-top: 1px solid var(--border-color);
+            padding: 10px 12px calc(12px + env(safe-area-inset-bottom));
+            flex-shrink: 0;
+        }
+
+        #settings-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: var(--accent-color);
+            font-size: 13px;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            padding: 8px 10px;
+            border-radius: var(--radius);
+        }
+
+        #settings-toggle:hover {
+            background: var(--border-color);
+            color: var(--text-color);
+        }
+
+        #settings-panel {
+            padding: 4px 10px 6px;
+        }
+
+        #settings-panel[hidden] {
+            display: none;
+        }
+
+        .setting-option {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text-color);
+            padding: 3px 0;
+            margin-top: 8px;
+            cursor: pointer;
+        }
+
+        .setting-hint {
+            font-size: 12px;
+            color: var(--accent-color);
+            margin: 0 0 2px 24px;
+            line-height: 1.4;
+        }
+
+        input[type="checkbox"] {
+            accent-color: var(--accent-color);
+        }
+
         .sidebar-note-item {
             display: flex;
             align-items: center;
@@ -1107,6 +1186,13 @@
     </style>
 </head>
 <body>
+    <script>
+        // Pre-paint: apply saved display option before first paint to avoid flash.
+        try {
+            var _s = JSON.parse(localStorage.getItem('zen-settings') || '{}');
+            if (_s.effects === false) document.body.classList.add('effects-off');
+        } catch (e) {}
+    </script>
     <a href="#editor" class="skip-link">Skip to editor</a>
     <div id="ascii-background" aria-hidden="true"></div>
     <div id="aria-live" class="skip-link" aria-live="polite" aria-atomic="true" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;"></div>
@@ -1127,6 +1213,26 @@
                 </div>
                 <button id="new-note-btn" type="button">+ New note</button>
                 <div id="sidebar-notes"></div>
+                <div id="sidebar-settings">
+                    <button id="settings-toggle" type="button" aria-expanded="false" aria-controls="settings-panel">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <line x1="4" y1="21" x2="4" y2="14"></line>
+                            <line x1="4" y1="10" x2="4" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12" y2="3"></line>
+                            <line x1="20" y1="21" x2="20" y2="16"></line>
+                            <line x1="20" y1="12" x2="20" y2="3"></line>
+                            <line x1="1" y1="14" x2="7" y2="14"></line>
+                            <line x1="9" y1="8" x2="15" y2="8"></line>
+                            <line x1="17" y1="16" x2="23" y2="16"></line>
+                        </svg>
+                        <span>Display</span>
+                    </button>
+                    <div id="settings-panel" hidden>
+                        <label class="setting-option"><input type="checkbox" id="setting-effects"> Ambient effects</label>
+                        <p class="setting-hint">Animated wave and frosted glass. Off is solid and still, and saves battery.</p>
+                    </div>
+                </div>
             </div>
         </nav>
 
@@ -1270,6 +1376,7 @@
         let cachedWaveCols = 0;
         let cachedWaveRows = 0;
         let reducedMotion = false;
+        let displaySettings = loadDisplaySettings();
 
         const CHAR_WIDTH = 8.4;
         const CHAR_HEIGHT = 17;
@@ -1321,13 +1428,35 @@
             }
         }
 
-        function measureWaveGrid() {
-            cachedWaveCols = Math.ceil(window.innerWidth / CHAR_WIDTH) + 2;
-            cachedWaveRows = Math.ceil(window.innerHeight / CHAR_HEIGHT);
+        const DISPLAY_SETTINGS_KEY = 'zen-settings';
+
+        function loadDisplaySettings() {
+            try {
+                const raw = JSON.parse(localStorage.getItem(DISPLAY_SETTINGS_KEY) || '{}');
+                return { effects: raw.effects !== false };
+            } catch (e) {
+                return { effects: true };
+            }
+        }
+
+        function persistDisplaySettings() {
+            try {
+                localStorage.setItem(DISPLAY_SETTINGS_KEY, JSON.stringify(displaySettings));
+            } catch (e) {}
+        }
+
+        function applyDisplaySettings() {
+            document.body.classList.toggle('effects-off', !displaySettings.effects);
+            const effectsBox = document.getElementById('setting-effects');
+            if (effectsBox) effectsBox.checked = displaySettings.effects;
+        }
+
+        function effectsOn() {
+            return displaySettings.effects && !reducedMotion;
         }
 
         function startWave() {
-            if (animationId || reducedMotion) return;
+            if (animationId || !effectsOn()) return;
             measureWaveGrid();
             lastWaveFrame = 0;
             animationId = requestAnimationFrame(generateAsciiWave);
@@ -1340,16 +1469,12 @@
             }
         }
 
-        function generateAsciiWave(timestamp) {
-            animationId = 0;
-            if (reducedMotion || document.visibilityState === 'hidden' || !document.hasFocus()) {
-                return;
-            }
-            if (timestamp && timestamp - lastWaveFrame < WAVE_FPS_MS) {
-                animationId = requestAnimationFrame(generateAsciiWave);
-                return;
-            }
-            lastWaveFrame = timestamp || performance.now();
+        function measureWaveGrid() {
+            cachedWaveCols = Math.ceil(window.innerWidth / CHAR_WIDTH) + 2;
+            cachedWaveRows = Math.ceil(window.innerHeight / CHAR_HEIGHT);
+        }
+
+        function paintFullFrame() {
             const width = cachedWaveCols || (measureWaveGrid(), cachedWaveCols);
             const height = cachedWaveRows || cachedWaveRows;
             const rows = new Array(height);
@@ -1369,6 +1494,19 @@
 
             asciiBg.textContent = rows.join('\n') + '\n';
             time = (time + 1) % 10000;
+        }
+
+        function generateAsciiWave(timestamp) {
+            animationId = 0;
+            if (reducedMotion || document.visibilityState === 'hidden' || !document.hasFocus()) {
+                return;
+            }
+            if (timestamp && timestamp - lastWaveFrame < WAVE_FPS_MS) {
+                animationId = requestAnimationFrame(generateAsciiWave);
+                return;
+            }
+            lastWaveFrame = timestamp || performance.now();
+            paintFullFrame();
             animationId = requestAnimationFrame(generateAsciiWave);
         }
 
@@ -1772,7 +1910,7 @@
 
         function trapSidebarFocus(e) {
             if (e.key !== 'Tab') return;
-            const focusable = sidebar.querySelectorAll('button, [tabindex]:not([tabindex="-1"])');
+            const focusable = sidebar.querySelectorAll('button, input, select, textarea, [tabindex]:not([tabindex="-1"])');
             const visible = Array.from(focusable).filter(el => el.offsetParent !== null);
             if (visible.length === 0) return;
             const first = visible[0];
@@ -2485,6 +2623,35 @@
         });
         newNoteBtn.addEventListener('click', createNote);
 
+        const settingsToggle = document.getElementById('settings-toggle');
+        const settingsPanel = document.getElementById('settings-panel');
+
+        settingsToggle.addEventListener('click', () => {
+            const opening = settingsPanel.hasAttribute('hidden');
+            if (opening) {
+                settingsPanel.removeAttribute('hidden');
+                settingsToggle.setAttribute('aria-expanded', 'true');
+            } else {
+                settingsPanel.setAttribute('hidden', '');
+                settingsToggle.setAttribute('aria-expanded', 'false');
+            }
+        });
+
+        settingsPanel.addEventListener('change', (e) => {
+            if (e.target.id === 'setting-effects') {
+                displaySettings.effects = e.target.checked;
+                persistDisplaySettings();
+                applyDisplaySettings();
+                if (displaySettings.effects) {
+                    startWave();
+                } else {
+                    stopWave();
+                    asciiBg.textContent = '';
+                }
+                announce('Ambient effects ' + (displaySettings.effects ? 'on' : 'off'));
+            }
+        });
+
         sidebarNotes.addEventListener('click', (e) => {
             const deleteBtn = e.target.closest('.sidebar-note-delete');
             if (deleteBtn) {
@@ -2588,7 +2755,6 @@
             clearTimeout(resizeTimeout);
             resizeTimeout = setTimeout(() => {
                 stopWave();
-                measureWaveGrid();
                 startWave();
                 scheduleScrollPadding();
             }, 150);
@@ -2651,10 +2817,9 @@
         slimQuery.addEventListener('change', updateMobileBar);
 
         loadSettings();
+        applyDisplaySettings();
         scheduleScrollPadding();
-        if (!reducedMotion) {
-            startWave();
-        }
+        startWave();
 
         if ('serviceWorker' in navigator && /^https?:$/.test(window.location.protocol)) {
             window.addEventListener('load', () => {

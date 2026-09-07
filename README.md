@@ -30,6 +30,8 @@ The sidebar list is independently scrollable — the header and "New note" butto
 
 A floating toggle button is visible when the sidebar is closed; the same button integrates into the sidebar header when open.
 
+A discreet **Display** section at the bottom of the sidebar offers an ambient-effects switch — off means a solid, still background with no blur, which is kinder on battery. The choice persists across sessions and defaults to on.
+
 ### 🌊 Animated ASCII Wave Background
 
 A subtle, animated background featuring wave patterns created with block characters
